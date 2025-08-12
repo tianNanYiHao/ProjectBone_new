@@ -1,12 +1,7 @@
-using Sirenix.OdinInspector;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using Unity.VisualScripting;
 using UnityEngine;
-
 
 
 public class Main : MonoBehaviour
