@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Google.Protobuf;
 using UnityEngine;
 
 public class TimerManager : SingletonManager<TimerManager>, IGeneric

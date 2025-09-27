@@ -31,12 +31,5 @@ public class Note
         get => _imageurl;
         set => _imageurl = value;
     }
-
-    public void UpdateNote(BoneNote boneNote)
-    {
-        Id = boneNote.NoteId;
-        Title = boneNote.NoteTitle;
-        Content = boneNote.Notecontent;
-        Imageurl = boneNote.Imageurl.ToList();
-    }
+    
 }

@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Google.Protobuf;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -33,87 +31,10 @@ public class WebRequestManager : MonoSingleton<WebRequestManager>, IDisposable
    {
        
    }
-   public void SendMessageAsync<T>(T message) where T : IMessage
-   {
-       MsgInfo msgInfo = message.ToMsgInfo();
-       var jsonFormatter = new JsonFormatter(new JsonFormatter.Settings(true));
-       string str = jsonFormatter.Format(message);
-       message.ToByteArray();
-       WWWForm form = new WWWForm();
-       //byte数组转字符串
-       form.AddField("msgid",msgInfo.ProtoId); 
-       form.AddField("msgstr",msgInfo.msg);  
-       //form.AddBinaryData("msgdata",bs);
-       Debug.Log("str:"+msgInfo.msg);
-       
-      
-       
-       StartCoroutine(PostRequest(url, form));
-   }
-   IEnumerator PostRequest(string url, WWWForm form)
-   {
-       using (UnityWebRequest webRequest = UnityWebRequest.Post(url, form))
-       {
-           yield return webRequest.SendWebRequest();
+  
+   
 
-           if (webRequest.isNetworkError || webRequest.isHttpError)
-           {
-               Debug.LogError(webRequest.error);
-           }
-           else
-           {
-              
-               string responseData = webRequest.downloadHandler.text;
-               int[] intArray = JsonConvert.DeserializeObject<int[]>(responseData);
-               
-               // 转换为字节数组
-               byte[] byteArray = new byte[intArray.Length];
-               for (int i = 0; i < intArray.Length; i++)
-               {
-                   byteArray[i] = (byte)intArray[i];
-               }
-              
-              
-                //Debug.Log("Received:" + webRequest.downloadHandler.text);
-               // Debug.Log("Cookie:"+webRequest.GetRequestHeader("Cookie"));
-               byte[] lengthBytes = new byte[4];
-               Array.Copy(byteArray, 0, lengthBytes, 0, 4);
-               byte[] idBytes = new byte[4];
-                Array.Copy(byteArray, 4, idBytes, 0, 4);
-               int packagelength = BitConverter.ToInt32(lengthBytes);
-               int protoId = BitConverter.ToInt32(idBytes);
-               byte[] messageBytes = new byte[packagelength];
-                Array.Copy(byteArray, 8, messageBytes, 0, packagelength);
-                Type messageType = ProtoManager.Instance.GetTypeByProtoId(protoId);
-                IMessage message = (IMessage)ObjectCreator.CreateInstance(messageType);
-                message.MergeFrom(messageBytes);
-                ModManager.Instance.InvokeWebSocketCallback(protoId, message);
-               
-               
-           }
-       }
-   }
-
-   private void ReceiveMessages(byte[] bs)
-   {
-
-
-
-       List<byte> catchbufferlist = bs.ToList();
-
-       int packagelength = BitConverter.ToInt32(catchbufferlist.GetRange(0, 4).ToArray(), 0);
-       int protoId = BitConverter.ToInt32(catchbufferlist.GetRange(4, 4).ToArray(), 0);
-       int messageLength = packagelength - sizeof(int) * 2;
-       Type messageType = ProtoManager.Instance.GetTypeByProtoId(protoId);
-       IMessage message = (IMessage)Activator.CreateInstance(messageType);
-       byte[] messageBytes = catchbufferlist.GetRange(8, messageLength).ToArray();
-       message.MergeFrom(messageBytes);
-       ModManager.Instance.InvokeWebSocketCallback(protoId, message);
-
-
-
-
-   }
+   
    
    public Dictionary<string, string> ParseResponse(string responseData)
    {
