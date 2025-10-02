@@ -319,10 +319,6 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
               for (int i = 0; i < skeletonInfos.Count; i++)
               {
                       SkeletonInfo skeletonInfo = skeletonInfos[i];
-                      if (skeletonInfo.bone.Id == 2243)
-                      {
-                              Debug.Log("骨骼所属位置:"+skeletonInfo.bone.Pos);
-                      }
                       if (UtilHelper.IsContains(pos,skeletonInfo.bone.Pos)  )
                       {
                               skeletonInfo.boneGameObject.SetActive(true);

@@ -44,7 +44,7 @@ public enum EnumPos
     //肩胛带
     Scapula = 1 << 8,
     //ALL
-    All = UpperLimbs | ShoulderBack | LowerLimbs | Pelvis | HeadAndNeck | ChestAndAbdomen | Spine | Scapula,
+    All = None| UpperLimbs | ShoulderBack | LowerLimbs | Pelvis | HeadAndNeck | ChestAndAbdomen | Spine | Scapula,
     
     
 }

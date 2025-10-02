@@ -97,25 +97,9 @@ public class Main : MonoBehaviour
     // 仅在首次调用 Update 方法之前调用 Start
     public void Start()
     {
-
-#if WEBTest
-        UIManager.Instance.ShowView(ViewID.TestView);
-#else
-        UIManager.Instance.ShowView(ViewID.MainView);
-        UIManager.Instance.ShowView(ViewID.BotMenuView);
-      // LoadBody();
-       for (int i = 0; i < 1; i++)
-       {
-           BoneMod.Instance.Test();
-       }
-      //UIManager.Instance.ShowView(ViewID.TestListView);
-#endif
-        
-
-
-
-
-      
+        GameObjectManager.Instance.SelectBoneType = (int)EnumPos.All;
+        GameObjectManager.Instance.BodyVisible = true;
+       
 
     }
 

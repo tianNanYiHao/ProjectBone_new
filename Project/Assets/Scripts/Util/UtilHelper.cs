@@ -10,7 +10,7 @@ public static class UtilHelper
     {
         if (target == 0)
         {
-            return false;
+            return true;
         }
         return (value & target) == target;
     }   

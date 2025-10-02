@@ -47,7 +47,7 @@ public abstract class UIBase:IViewGeneric
 
     private void OnLoadDone(GameObject uiroot)
     {
-        Root=   GameObject.Instantiate(uiroot,UIManager.Instance.UIRoot.transform);
+        Root = null;//   GameObject.Instantiate(uiroot,UIManager.Instance.UIRoot.transform);
         Initialize();
         OnShow(Args);
     }

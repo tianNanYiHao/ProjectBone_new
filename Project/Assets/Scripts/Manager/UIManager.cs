@@ -19,7 +19,7 @@ using UnityEngine;
         private List<UIBase> _showViewsList = new List<UIBase>();
         //隐藏中的界面
         private List<UIBase> _hideViewsList = new List<UIBase>();
-        public Transform UIRoot { get; set; }
+        // public Transform UIRoot { get; set; }
         public Camera UICamera { get; set; }
         public Transform WindowRoot { get; set; }
         public Transform BotWindowRoot { get; set; }
@@ -30,24 +30,24 @@ using UnityEngine;
         public override void Initialize()
         {
             Debug.Log("UIManager Initialize");
-            GameObject eventSystem = GameObject.Find("EventSystem");
-            UIRoot = GameObject.Find("ui_root").transform;
-            WindowRoot = UIRoot.Find("canvas/window");
-            BotWindowRoot = UIRoot.Find("canvas/bot_window");
-            WebWindowRoot = UIRoot.Find("canvas/web_window");
-            TipsRoot = UIRoot.Find("canvas/Tips_window");
+            //GameObject eventSystem = GameObject.Find("EventSystem");
+            //UIRoot = GameObject.Find("ui_root").transform;
+            // WindowRoot = UIRoot.Find("canvas/window");
+            // BotWindowRoot = UIRoot.Find("canvas/bot_window");
+            // WebWindowRoot = UIRoot.Find("canvas/web_window");
+            // TipsRoot = UIRoot.Find("canvas/Tips_window");
             UICamera = new GameObject("UICamera").AddComponent<Camera>();
             UICamera.cullingMask = 1 << LayerMask.NameToLayer("UI");
             UICamera.clearFlags = CameraClearFlags.Depth;
             UICamera.depth = 1;
             UICamera.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
-            Canvas canvas = UIRoot.Find("canvas").GetComponent<Canvas>();
-            canvas.worldCamera = UICamera;
+            //Canvas canvas = UIRoot.Find("canvas").GetComponent<Canvas>();
+            //canvas.worldCamera = UICamera;
              // UIRoot.gameObject.AddComponent<EventSystem>();
              // UIRoot.gameObject.AddComponent<StandaloneInputModule>();
              //UIRoot.gameObject.AddComponent<Canvas>();
-            GameObject.DontDestroyOnLoad(UIRoot);
-            GameObject.DontDestroyOnLoad(eventSystem);
+            //GameObject.DontDestroyOnLoad(UIRoot);
+            //GameObject.DontDestroyOnLoad(eventSystem);
             //创建一个model相机
             ModelCamera = new GameObject("modelCamera").AddComponent<Camera>();
            
