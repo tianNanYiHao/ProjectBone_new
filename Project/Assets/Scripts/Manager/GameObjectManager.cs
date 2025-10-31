@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
 {
@@ -24,30 +25,27 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
         {
                 get
                 {
-                        return bodyVisible
-                                ;
+                        return bodyVisible;
                 }
                 set
                 {
-                       
-                        if (Body!= null)
-                        { 
-                                bodyVisible = value;
-                                // if (value == true)
-                                // {
-                                //         ChangeBodyLayer(UnityLayer.Layer_Body);        
-                                // }
-                                // else
-                                // {
-                                //         ChangeBodyLayer(UnityLayer.Layer_Default);
-                                // }
-                                Body.SetActive(value);
-                        }
+                        if (!Body)
                         {
                                 bodyVisible = false;
+                                return;
                         }
+                        
+                        bodyVisible = value;
+                        if (value)
+                        {
+                                ChangeBodyLayer(UnityLayer.Layer_Body);        
+                        }
+                        else
+                        {
+                                ChangeBodyLayer(UnityLayer.Layer_Default);
+                        }
+                        Body.SetActive(value);
                 }
-             
         }
 
         public int ShowType
@@ -345,43 +343,134 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
               return null;
       }
 
+      /// <summary>
+      /// 重置位置
+      /// </summary>
       public void ReSetPos()
       {
-              if (Body != null)
+              if (!Body)
               {
-                      Body.transform.position = initpos;
+                      return;
               }
-              {
-                      
-              }
+              Body.transform.position = initpos;
       }
       
+      /// <summary>
+      /// 重置缩放
+      /// </summary>
       public void ReSetScale()
       {
-              if (Body != null)
+              if (!Body)
               {
-                      Body.transform.localScale = initscale;
+                      return;
               }
-              {
-                      
-              }
+              Body.transform.localScale = initscale;
       }
       
+      /// <summary>
+      /// 重置角度
+      /// </summary>
       public void ResetAngle()
       {
-              if (Body != null)
+              if (!Body)
               {
-                      Body.transform.eulerAngles = initangle;
+                      return;
               }
-              {
-                      
-              }
+              Body.transform.eulerAngles = initangle;
       }
       
+      /// <summary>
+      /// 完全重置模型（位置、缩放、角度）
+      /// </summary>
       public void ReSet()
       {
               ReSetPos();
               ReSetScale();
               ResetAngle();
+      }
+
+      /// <summary>
+      /// 导出当前所有骨骼配置数据
+      /// </summary>
+      public List<BoneData> ExportBoneConfig()
+      {
+              List<BoneData> boneDataList = new List<BoneData>();
+              
+              for (int i = 0; i < skeletonInfos.Count; i++)
+              {
+                      SkeletonInfo skeletonInfo = skeletonInfos[i];
+                      if (skeletonInfo.bone != null)
+                      {
+                              BoneData data = new BoneData
+                              {
+                                      id = skeletonInfo.bone.Id,
+                                      type = (int)skeletonInfo.bone.Boneenum,
+                                      position = skeletonInfo.bone.Pos
+                              };
+                              boneDataList.Add(data);
+                      }
+              }
+              
+              Debug.Log($"导出骨骼配置: 共{boneDataList.Count}个骨骼");
+              return boneDataList;
+      }
+      
+      /// <summary>
+      /// 应用骨骼配置数据
+      /// </summary>
+      public void ApplyBoneConfig(List<BoneData> boneDataList)
+      {
+              if (boneDataList == null || boneDataList.Count == 0)
+              {
+                      Debug.LogWarning("骨骼配置数据为空");
+                      return;
+              }
+              
+              int appliedCount = 0;
+              for (int i = 0; i < boneDataList.Count; i++)
+              {
+                      BoneData data = boneDataList[i];
+                      if (BoneMod.Instance.boneDic.ContainsKey(data.id))
+                      {
+                              Bone bone = BoneMod.Instance.boneDic[data.id];
+                              bone.Boneenum = (EnumBone)data.type;
+                              bone.Pos = data.position;
+                              appliedCount++;
+                      }
+                      else
+                      {
+                              Debug.LogWarning($"未找到ID为{data.id}的骨骼");
+                      }
+              }
+              
+              Debug.Log($"应用骨骼配置: 成功应用{appliedCount}/{boneDataList.Count}个骨骼");
+              
+              // 刷新显示
+              ShowBoneByType(boneShowType);
+              SelectBoneByPos(selectBoneType);
+      }
+      
+      /// <summary>
+      /// 从JSON字符串加载骨骼配置
+      /// </summary>
+      public void LoadBoneConfigFromJson(string jsonString)
+      {
+              if (string.IsNullOrEmpty(jsonString))
+              {
+                      Debug.LogWarning("JSON字符串为空");
+                      return;
+              }
+              
+              List<BoneData> boneDataList = JsonConvert.DeserializeObject<List<BoneData>>(jsonString);
+              ApplyBoneConfig(boneDataList);
+      }
+      
+      /// <summary>
+      /// 将骨骼配置导出为JSON字符串
+      /// </summary>
+      public string ExportBoneConfigToJson()
+      {
+              List<BoneData> boneDataList = ExportBoneConfig();
+              return JsonConvert.SerializeObject(boneDataList, Formatting.Indented);
       }
 }

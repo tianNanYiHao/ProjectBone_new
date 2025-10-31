@@ -20,12 +20,14 @@ public class ButtonBehaviorCustomData // 定义可序列化数据结构
     public int code;
 }
 
-public class MessageData
+/// <summary>
+/// 骨骼数据配置类 - 用于序列化和反序列化
+/// </summary>
+public class BoneData
 {
-    public int id;
-    public int type;
-    public int direction;
-    public int position;
+    public int id;              // 骨骼ID
+    public int type;            // 骨骼类型 (EnumBone: Bone=1, Muscle=2, Fascia=4)
+    public int position;        // 骨骼位置 (EnumPos: 上肢、肩背、下肢等)
 }
 
 public class ButtonBehavior : MonoBehaviour
@@ -73,27 +75,76 @@ public class ButtonBehavior : MonoBehaviour
     }
 
     /// <summary>
-    /// 序列化MessageData为JSON字符串
+    /// 序列化单个骨骼数据为JSON字符串
     /// </summary>
-    public string SerializeMessageData(MessageData data)
+    public string SerializeBoneData(BoneData data)
     {
         return JsonConvert.SerializeObject(data);
     }
 
     /// <summary>
-    /// 反序列化JSON字符串为MessageData
+    /// 序列化骨骼数据列表为JSON字符串
     /// </summary>
-    public MessageData DeserializeMessageData(string jsonString)
+    public string SerializeBoneDataList(List<BoneData> dataList)
     {
-        return JsonConvert.DeserializeObject<MessageData>(jsonString);
+        return JsonConvert.SerializeObject(dataList);
     }
 
     /// <summary>
-    /// 序列化MessageData并发送到移动端
+    /// 反序列化JSON字符串为单个骨骼数据
     /// </summary>
-    public void SendMessageData(MessageData data)
+    public BoneData DeserializeBoneData(string jsonString)
     {
-        string jsonString = SerializeMessageData(data);
+        return JsonConvert.DeserializeObject<BoneData>(jsonString);
+    }
+
+    /// <summary>
+    /// 反序列化JSON字符串为骨骼数据列表
+    /// </summary>
+    public List<BoneData> DeserializeBoneDataList(string jsonString)
+    {
+        return JsonConvert.DeserializeObject<List<BoneData>>(jsonString);
+    }
+
+    /// <summary>
+    /// 序列化骨骼数据并发送到移动端
+    /// </summary>
+    public void SendBoneData(BoneData data)
+    {
+        string jsonString = SerializeBoneData(data);
+        ButtonPressed(jsonString);
+    }
+
+    /// <summary>
+    /// 序列化骨骼数据列表并发送到移动端
+    /// </summary>
+    public void SendBoneDataList(List<BoneData> dataList)
+    {
+        string jsonString = SerializeBoneDataList(dataList);
+        ButtonPressed(jsonString);
+    }
+
+    /// <summary>
+    /// 接收并应用骨骼配置数据
+    /// </summary>
+    public void ReceiveBoneConfig(string jsonString)
+    {
+        Debug.Log("---- 接收骨骼配置数据 ----" + jsonString);
+        List<BoneData> boneDataList = DeserializeBoneDataList(jsonString);
+        if (boneDataList != null && boneDataList.Count > 0)
+        {
+            GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
+        }
+    }
+
+    /// <summary>
+    /// 导出当前所有骨骼配置
+    /// </summary>
+    public void ExportBoneConfig()
+    {
+        Debug.Log("---- 导出骨骼配置 ----");
+        List<BoneData> boneDataList = GameObjectManager.Instance.ExportBoneConfig();
+        string jsonString = SerializeBoneDataList(boneDataList);
         ButtonPressed(jsonString);
     }
     
