@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class NativeAPI
 {
@@ -17,6 +18,14 @@ public class ButtonBehaviorCustomData // 定义可序列化数据结构
 {
     public string msg;
     public int code;
+}
+
+public class MessageData
+{
+    public int id;
+    public int type;
+    public int direction;
+    public int position;
 }
 
 public class ButtonBehavior : MonoBehaviour
@@ -63,5 +72,29 @@ public class ButtonBehavior : MonoBehaviour
         GameObjectManager.Instance.BodyVisible = false;
     }
 
+    /// <summary>
+    /// 序列化MessageData为JSON字符串
+    /// </summary>
+    public string SerializeMessageData(MessageData data)
+    {
+        return JsonConvert.SerializeObject(data);
+    }
+
+    /// <summary>
+    /// 反序列化JSON字符串为MessageData
+    /// </summary>
+    public MessageData DeserializeMessageData(string jsonString)
+    {
+        return JsonConvert.DeserializeObject<MessageData>(jsonString);
+    }
+
+    /// <summary>
+    /// 序列化MessageData并发送到移动端
+    /// </summary>
+    public void SendMessageData(MessageData data)
+    {
+        string jsonString = SerializeMessageData(data);
+        ButtonPressed(jsonString);
+    }
     
 }
