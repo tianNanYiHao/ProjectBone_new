@@ -147,5 +147,25 @@ public class ButtonBehavior : MonoBehaviour
         string jsonString = SerializeBoneDataList(boneDataList);
         ButtonPressed(jsonString);
     }
+
+    /// <summary>
+    /// 根据骨骼类型显示模型
+    /// </summary>
+    /// <param name="type">骨骼类型 (EnumBone: Bone=1, Muscle=2, Fascia=4)</param>
+    public void ShowModelByType(int type)
+    {
+        Debug.Log($"---- 根据类型显示模型 ---- type: {type}");
+        GameObjectManager.Instance.ShowBoneByType(type);
+    }
+
+    /// <summary>
+    /// 根据骨骼位置显示模型
+    /// </summary>
+    /// <param name="position">骨骼位置 (EnumPos: 上肢、肩背、下肢等)</param>
+    public void ShowModelByPosition(int position)
+    {
+        Debug.Log($"---- 根据位置显示模型 ---- position: {position}");
+        GameObjectManager.Instance.SelectBoneByPos(position);
+    }
     
 }
