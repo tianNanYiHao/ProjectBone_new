@@ -389,66 +389,68 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
               ResetAngle();
       }
 
-      /// <summary>
-      /// 导出当前所有骨骼配置数据
-      /// </summary>
-      public List<BoneData> ExportBoneConfig()
-      {
-              List<BoneData> boneDataList = new List<BoneData>();
-              
-              for (int i = 0; i < skeletonInfos.Count; i++)
-              {
-                      SkeletonInfo skeletonInfo = skeletonInfos[i];
-                      if (skeletonInfo.bone != null)
-                      {
-                              BoneData data = new BoneData
-                              {
-                                      id = skeletonInfo.bone.Id,
-                                      type = (int)skeletonInfo.bone.Boneenum,
-                                      position = skeletonInfo.bone.Pos
-                              };
-                              boneDataList.Add(data);
-                      }
-              }
-              
-              Debug.Log($"导出骨骼配置: 共{boneDataList.Count}个骨骼");
-              return boneDataList;
-      }
+     /// <summary>
+     /// 导出当前所有骨骼配置数据
+     /// </summary>
+     public List<BoneData> ExportBoneConfig()
+     {
+             List<BoneData> boneDataList = new List<BoneData>();
+             
+             for (int i = 0; i < skeletonInfos.Count; i++)
+             {
+                     SkeletonInfo skeletonInfo = skeletonInfos[i];
+                     if (skeletonInfo.bone != null)
+                     {
+                             BoneData data = new BoneData
+                             {
+                                     id = skeletonInfo.bone.Id,
+                                     type = (int)skeletonInfo.bone.Boneenum,
+                                     position = skeletonInfo.bone.Pos,
+                                     direction = skeletonInfo.bone.Direction
+                             };
+                             boneDataList.Add(data);
+                     }
+             }
+             
+             Debug.Log($"导出骨骼配置: 共{boneDataList.Count}个骨骼");
+             return boneDataList;
+     }
       
-      /// <summary>
-      /// 应用骨骼配置数据
-      /// </summary>
-      public void ApplyBoneConfig(List<BoneData> boneDataList)
-      {
-              if (boneDataList == null || boneDataList.Count == 0)
-              {
-                      Debug.LogWarning("骨骼配置数据为空");
-                      return;
-              }
-              
-              int appliedCount = 0;
-              for (int i = 0; i < boneDataList.Count; i++)
-              {
-                      BoneData data = boneDataList[i];
-                      if (BoneMod.Instance.boneDic.ContainsKey(data.id))
-                      {
-                              Bone bone = BoneMod.Instance.boneDic[data.id];
-                              bone.Boneenum = (EnumBone)data.type;
-                              bone.Pos = data.position;
-                              appliedCount++;
-                      }
-                      else
-                      {
-                              Debug.LogWarning($"未找到ID为{data.id}的骨骼");
-                      }
-              }
-              
-              Debug.Log($"应用骨骼配置: 成功应用{appliedCount}/{boneDataList.Count}个骨骼");
-              
-              // 刷新显示
-              ShowBoneByType(boneShowType);
-              SelectBoneByPos(selectBoneType);
-      }
+     /// <summary>
+     /// 应用骨骼配置数据
+     /// </summary>
+     public void ApplyBoneConfig(List<BoneData> boneDataList)
+     {
+             if (boneDataList == null || boneDataList.Count == 0)
+             {
+                     Debug.LogWarning("骨骼配置数据为空");
+                     return;
+             }
+             
+             int appliedCount = 0;
+             for (int i = 0; i < boneDataList.Count; i++)
+             {
+                     BoneData data = boneDataList[i];
+                     if (BoneMod.Instance.boneDic.ContainsKey(data.id))
+                     {
+                             Bone bone = BoneMod.Instance.boneDic[data.id];
+                             bone.Boneenum = (EnumBone)data.type;
+                             bone.Pos = data.position;
+                             bone.Direction = data.direction;
+                             appliedCount++;
+                     }
+                     else
+                     {
+                             Debug.LogWarning($"未找到ID为{data.id}的骨骼");
+                     }
+             }
+             
+             Debug.Log($"应用骨骼配置: 成功应用{appliedCount}/{boneDataList.Count}个骨骼");
+             
+             // 刷新显示
+             ShowBoneByType(boneShowType);
+             SelectBoneByPos(selectBoneType);
+     }
       
       /// <summary>
       /// 从JSON字符串加载骨骼配置

@@ -11,6 +11,8 @@ public class Bone
     private EnumBone _boneenum;
     //所属部位
     private int _pos = (int)EnumPos.None;
+    //方向
+    private int _direction = (int)EnumDirection.None;
     public int Id
     {
         get => _id;
@@ -53,10 +55,22 @@ public class Bone
         set => _pos = value;
     }
 
+    public int Direction
+    {
+        get => _direction;
+        set => _direction = value;
+    }
+
     
     //是否属于某个部位
     public bool IsPos(int pos)
     {
         return (Pos & pos) == pos;
+    }
+    
+    //是否属于某个方向
+    public bool IsDirection(int direction)
+    {
+        return (Direction & direction) == direction;
     }
 }

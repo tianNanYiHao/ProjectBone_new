@@ -65,5 +65,21 @@ public enum BoneShowType
   
 }
 
+/// <summary>
+/// 骨骼方向枚举
+/// </summary>
+[Flags]
+public enum EnumDirection
+{
+    //无
+    None = 0,
+    //左侧
+    Left = 1 << 0,
+    //右侧
+    Right = 1 << 1,
+    //其他
+    Other = 1 << 2,
+}
+
 
 
