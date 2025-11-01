@@ -28,6 +28,7 @@ public class BoneData
     public int id;              // 骨骼ID
     public int type;            // 骨骼类型 (EnumBone: Bone=1, Muscle=2, Fascia=4)
     public int position;        // 骨骼位置 (EnumPos: 上肢、肩背、下肢等)
+    public int direction;       // 骨骼方向 (EnumDirection: None=0, Left=1, Right=2, Other=4)
 }
 
 public class ButtonBehavior : MonoBehaviour
