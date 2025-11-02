@@ -14,10 +14,10 @@ public class NativeAPI
 }
 
 
-public class ButtonBehaviorCustomData // 定义可序列化数据结构
+public class ButtonBehaviorCustomData // 定义可序列化数据结构 - 通讯协议外层封装
 {
-    public string msg;
-    public int code;
+    public string msg;      // 实际业务数据的JSON字符串
+    public int code;        // 消息类型代码
 }
 
 /// <summary>
@@ -31,6 +31,21 @@ public class BoneData
     public int direction;       // 骨骼方向 (EnumDirection: None=0, Left=1, Right=2, Other=4)
 }
 
+/// <summary>
+/// 消息类型代码定义
+/// </summary>
+public static class MessageCode
+{
+    public const int ShowModel = 1;             // 显示模型
+    public const int HideModel = 2;             // 隐藏模型
+    public const int ReceiveBoneConfig = 3;     // 接收骨骼配置
+    public const int ExportBoneConfig = 4;      // 导出骨骼配置
+    public const int ShowByType = 5;            // 根据类型显示
+    public const int ShowByPosition = 6;        // 根据位置显示
+    public const int SendBoneData = 7;          // 发送单个骨骼数据
+    public const int SendBoneDataList = 8;      // 发送骨骼数据列表
+}
+
 public class ButtonBehavior : MonoBehaviour
 {
     private void Awake()
@@ -38,7 +53,10 @@ public class ButtonBehavior : MonoBehaviour
         DontDestroyOnLoad(this.gameObject);
     }
 
-    public void ButtonPressed(string jsonString)
+    /// <summary>
+    /// 发送消息到移动端（底层通讯方法）
+    /// </summary>
+    private void SendMessageToMobile(string jsonString)
     {
         Debug.Log("---- 通信脚本触发 ----" + jsonString);
         if (Application.platform == RuntimePlatform.Android)
@@ -47,7 +65,6 @@ public class ButtonBehavior : MonoBehaviour
             {
                 jc.CallStatic("sendMessageToMobileApp", jsonString);
             }
-            
         }
         else if (Application.platform == RuntimePlatform.IPhonePlayer)
         {
@@ -55,6 +72,98 @@ public class ButtonBehavior : MonoBehaviour
             NativeAPI.sendMessageToMobileApp(jsonString);
 #endif
         }
+    }
+
+    /// <summary>
+    /// 封装并发送消息（外层包装 ButtonBehaviorCustomData）
+    /// </summary>
+    private void SendWrappedMessage(int code, string msg)
+    {
+        ButtonBehaviorCustomData customData = new ButtonBehaviorCustomData
+        {
+            code = code,
+            msg = msg
+        };
+        string jsonString = JsonConvert.SerializeObject(customData);
+        SendMessageToMobile(jsonString);
+    }
+
+    /// <summary>
+    /// 统一消息接收入口（从移动端接收）
+    /// </summary>
+    public void ReceiveMessage(string jsonString)
+    {
+        Debug.Log("---- 接收消息 ----" + jsonString);
+        
+        try
+        {
+            // 第一层反序列化：解析 ButtonBehaviorCustomData
+            ButtonBehaviorCustomData customData = JsonConvert.DeserializeObject<ButtonBehaviorCustomData>(jsonString);
+            
+            if (customData == null)
+            {
+                Debug.LogError("反序列化 ButtonBehaviorCustomData 失败");
+                return;
+            }
+
+            // 根据 code 分发消息，msg 为具体业务数据
+            ProcessMessage(customData.code, customData.msg);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"处理消息异常: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 处理具体业务消息
+    /// </summary>
+    private void ProcessMessage(int code, string msg)
+    {
+        switch (code)
+        {
+            case MessageCode.ShowModel:
+                ShowModel();
+                break;
+            
+            case MessageCode.HideModel:
+                HideModel();
+                break;
+            
+            case MessageCode.ReceiveBoneConfig:
+                ReceiveBoneConfigInternal(msg);
+                break;
+            
+            case MessageCode.ExportBoneConfig:
+                ExportBoneConfig();
+                break;
+            
+            case MessageCode.ShowByType:
+                if (int.TryParse(msg, out int type))
+                {
+                    ShowModelByType(type);
+                }
+                break;
+            
+            case MessageCode.ShowByPosition:
+                if (int.TryParse(msg, out int position))
+                {
+                    ShowModelByPosition(position);
+                }
+                break;
+            
+            default:
+                Debug.LogWarning($"未知的消息类型代码: {code}");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 兼容旧的 ButtonPressed 方法（保持向后兼容）
+    /// </summary>
+    public void ButtonPressed(string jsonString)
+    {
+        SendMessageToMobile(jsonString);
     }
 
     /// <summary>
@@ -112,8 +221,8 @@ public class ButtonBehavior : MonoBehaviour
     /// </summary>
     public void SendBoneData(BoneData data)
     {
-        string jsonString = SerializeBoneData(data);
-        ButtonPressed(jsonString);
+        string msg = SerializeBoneData(data);
+        SendWrappedMessage(MessageCode.SendBoneData, msg);
     }
 
     /// <summary>
@@ -121,20 +230,41 @@ public class ButtonBehavior : MonoBehaviour
     /// </summary>
     public void SendBoneDataList(List<BoneData> dataList)
     {
-        string jsonString = SerializeBoneDataList(dataList);
-        ButtonPressed(jsonString);
+        string msg = SerializeBoneDataList(dataList);
+        SendWrappedMessage(MessageCode.SendBoneDataList, msg);
     }
 
     /// <summary>
-    /// 接收并应用骨骼配置数据
+    /// 接收并应用骨骼配置数据（公开接口，兼容旧调用）
     /// </summary>
     public void ReceiveBoneConfig(string jsonString)
     {
-        Debug.Log("---- 接收骨骼配置数据 ----" + jsonString);
-        List<BoneData> boneDataList = DeserializeBoneDataList(jsonString);
-        if (boneDataList != null && boneDataList.Count > 0)
+        Debug.Log("---- 接收骨骼配置数据（兼容方法） ----" + jsonString);
+        ReceiveBoneConfigInternal(jsonString);
+    }
+
+    /// <summary>
+    /// 内部处理：接收并应用骨骼配置数据
+    /// </summary>
+    private void ReceiveBoneConfigInternal(string msg)
+    {
+        Debug.Log("---- 处理骨骼配置数据 ----" + msg);
+        try
         {
-            GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
+            // 第二层反序列化：从 msg 中解析具体的骨骼数据
+            List<BoneData> boneDataList = DeserializeBoneDataList(msg);
+            if (boneDataList != null && boneDataList.Count > 0)
+            {
+                GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
+            }
+            else
+            {
+                Debug.LogWarning("骨骼配置数据为空");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"处理骨骼配置数据异常: {e.Message}");
         }
     }
 
@@ -145,8 +275,8 @@ public class ButtonBehavior : MonoBehaviour
     {
         Debug.Log("---- 导出骨骼配置 ----");
         List<BoneData> boneDataList = GameObjectManager.Instance.ExportBoneConfig();
-        string jsonString = SerializeBoneDataList(boneDataList);
-        ButtonPressed(jsonString);
+        string msg = SerializeBoneDataList(boneDataList);
+        SendWrappedMessage(MessageCode.ExportBoneConfig, msg);
     }
 
     /// <summary>
