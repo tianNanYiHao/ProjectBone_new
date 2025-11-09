@@ -28,21 +28,21 @@ public enum EnumPos
     //无
     None = 0,
     //上肢
-    UpperLimbs = 1 << 1,
+    UpperLimbs = 1 << 0,
     //肩背
-    ShoulderBack = 1<<2,
+    ShoulderBack = 1<<1,
     //下肢
-    LowerLimbs = 1 << 3,
+    LowerLimbs = 1 << 2,
     //盆骨
-    Pelvis = 1 << 4,
+    Pelvis = 1 << 3,
     //头颈
-    HeadAndNeck = 1 << 5,
+    HeadAndNeck = 1 << 4,
     //胸腹
-    ChestAndAbdomen = 1 << 6,
+    ChestAndAbdomen = 1 << 5,
     //脊柱
-    Spine = 1 << 7,
+    Spine = 1 << 6,
     //肩胛带
-    Scapula = 1 << 8,
+    Scapula = 1 << 7,
     //ALL
     All = None| UpperLimbs | ShoulderBack | LowerLimbs | Pelvis | HeadAndNeck | ChestAndAbdomen | Spine | Scapula,
     
