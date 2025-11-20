@@ -33,6 +33,13 @@ public class BoneMod : SingletonMod<BoneMod>,IMod
                 if (GameObjectManager.Instance.Body != null)
                 {
                     GameObjectManager.Instance.SelectBone(selectedBoneIds[selectedBoneIds.Count - 1]);
+                    
+                    // 通知移动端骨骼被选中
+                    ButtonBehavior buttonBehavior = GameObject.FindObjectOfType<ButtonBehavior>();
+                    if (buttonBehavior != null)
+                    {
+                        buttonBehavior.NotifyBoneSelected(selectedBoneIds[selectedBoneIds.Count - 1]);
+                    }
                 }
             }
         }

@@ -44,6 +44,13 @@ public static class MessageCode
     public const int ShowByPosition = 6;        // 根据位置显示
     public const int SendBoneData = 7;          // 发送单个骨骼数据
     public const int SendBoneDataList = 8;      // 发送骨骼数据列表
+    public const int BoneSelected = 9;          // 骨骼被选中
+    public const int HideBone = 10;             // 隐藏选中的骨骼
+    public const int HideOtherBone = 11;        // 隐藏其他骨骼（只显示选中的）
+    public const int ShowAllBone = 12;          // 显示所有骨骼
+    public const int ResetBoneColor = 13;       // 重置骨骼颜色
+    public const int TransparentOtherBone = 14; // 透明其他骨骼（只有选中的不透明）
+    public const int ResetBoneTransparency = 15; // 重置骨骼透明度
 }
 
 public class ButtonBehavior : MonoBehaviour
@@ -150,6 +157,30 @@ public class ButtonBehavior : MonoBehaviour
                 {
                     ShowModelByPosition(position);
                 }
+                break;
+            
+            case MessageCode.HideBone:
+                HideBone();
+                break;
+            
+            case MessageCode.HideOtherBone:
+                HideOtherBone();
+                break;
+            
+            case MessageCode.ShowAllBone:
+                ShowAllBone();
+                break;
+            
+            case MessageCode.ResetBoneColor:
+                ResetBoneColor();
+                break;
+            
+            case MessageCode.TransparentOtherBone:
+                TransparentOtherBone();
+                break;
+            
+            case MessageCode.ResetBoneTransparency:
+                ResetBoneTransparency();
                 break;
             
             default:
@@ -297,6 +328,70 @@ public class ButtonBehavior : MonoBehaviour
     {
         Debug.Log($"---- 根据位置显示模型 ---- position: {position}");
         GameObjectManager.Instance.SelectBoneByPos(position);
+    }
+
+    /// <summary>
+    /// 通知移动端骨骼被选中
+    /// </summary>
+    /// <param name="boneId">被选中的骨骼ID</param>
+    public void NotifyBoneSelected(int boneId)
+    {
+        Debug.Log($"---- 通知移动端骨骼被选中 ---- boneId: {boneId}");
+        SendWrappedMessage(MessageCode.BoneSelected, boneId.ToString());
+    }
+
+    /// <summary>
+    /// 隐藏选中的骨骼
+    /// </summary>
+    public void HideBone()
+    {
+        Debug.Log("---- 隐藏选中的骨骼 ----");
+        GameObjectManager.Instance.HideBone();
+    }
+
+    /// <summary>
+    /// 隐藏其他骨骼（只显示选中的）
+    /// </summary>
+    public void HideOtherBone()
+    {
+        Debug.Log("---- 隐藏其他骨骼 ----");
+        GameObjectManager.Instance.HideOtherBone();
+    }
+
+    /// <summary>
+    /// 显示所有骨骼
+    /// </summary>
+    public void ShowAllBone()
+    {
+        Debug.Log("---- 显示所有骨骼 ----");
+        GameObjectManager.Instance.ShowBoneByType((int)BoneShowType.All);
+    }
+
+    /// <summary>
+    /// 重置骨骼颜色
+    /// </summary>
+    public void ResetBoneColor()
+    {
+        Debug.Log("---- 重置骨骼颜色 ----");
+        GameObjectManager.Instance.ResetBoneColor();
+    }
+
+    /// <summary>
+    /// 透明其他骨骼（只有选中的不透明）
+    /// </summary>
+    public void TransparentOtherBone()
+    {
+        Debug.Log("---- 透明其他骨骼 ----");
+        GameObjectManager.Instance.TransparentOtherBone();
+    }
+
+    /// <summary>
+    /// 重置骨骼透明度（恢复所有骨骼为不透明）
+    /// </summary>
+    public void ResetBoneTransparency()
+    {
+        Debug.Log("---- 重置骨骼透明度 ----");
+        GameObjectManager.Instance.ResetBoneTransparency();
     }
     
 }

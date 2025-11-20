@@ -159,6 +159,78 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
                         skeletonInfo.meshRenderer.material.color = NormalColor;
                 }
         }
+
+        /// <summary>
+        /// 透明其他骨骼（选中的骨骼保持不透明，其他骨骼变透明）
+        /// </summary>
+        public void TransparentOtherBone()
+        {
+                var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
+                if (selectedBoneIds.Count == 0)
+                {
+                        Debug.LogWarning("没有选中的骨骼");
+                        return;
+                }
+                
+                int currentBoneId = selectedBoneIds[selectedBoneIds.Count - 1];
+                
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        Material material = skeletonInfo.meshRenderer.material;
+                        
+                        // 设置材质为透明模式
+                        material.SetFloat("_Mode", 3); // Transparent mode
+                        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        material.SetInt("_ZWrite", 0);
+                        material.DisableKeyword("_ALPHATEST_ON");
+                        material.EnableKeyword("_ALPHABLEND_ON");
+                        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        material.renderQueue = 3000;
+                        
+                        if (skeletonInfo.boneId == currentBoneId)
+                        {
+                                // 选中的骨骼：不透明，高亮颜色
+                                Color color = SelectColor;
+                                color.a = 1f;
+                                material.color = color;
+                        }
+                        else
+                        {
+                                // 其他骨骼：半透明
+                                Color color = NormalColor;
+                                color.a = 0.3f;
+                                material.color = color;
+                        }
+                }
+        }
+
+        /// <summary>
+        /// 重置所有骨骼透明度（恢复为不透明状态）
+        /// </summary>
+        public void ResetBoneTransparency()
+        {
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        Material material = skeletonInfo.meshRenderer.material;
+                        
+                        // 设置材质为不透明模式
+                        material.SetFloat("_Mode", 0); // Opaque mode
+                        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                        material.SetInt("_ZWrite", 1);
+                        material.DisableKeyword("_ALPHATEST_ON");
+                        material.DisableKeyword("_ALPHABLEND_ON");
+                        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        material.renderQueue = -1;
+                        
+                        Color color = NormalColor;
+                        color.a = 1f;
+                        material.color = color;
+                }
+        }
         private void OnDrag(Vector2 lastpos, Vector2 curpos)
         {
                //拖拽模型位置
