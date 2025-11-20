@@ -32,25 +32,39 @@ public class BoneData
 }
 
 /// <summary>
-/// 消息类型代码定义
+/// 骨骼点击信息类 - 用于传递骨骼点击信息（App端根据ID可获取完整数据）
 /// </summary>
-public static class MessageCode
+public class BoneClickInfo
 {
-    public const int ShowModel = 1;             // 显示模型
-    public const int HideModel = 2;             // 隐藏模型
-    public const int ReceiveBoneConfig = 3;     // 接收骨骼配置
-    public const int ExportBoneConfig = 4;      // 导出骨骼配置
-    public const int ShowByType = 5;            // 根据类型显示
-    public const int ShowByPosition = 6;        // 根据位置显示
-    public const int SendBoneData = 7;          // 发送单个骨骼数据
-    public const int SendBoneDataList = 8;      // 发送骨骼数据列表
-    public const int BoneSelected = 9;          // 骨骼被选中
-    public const int HideBone = 10;             // 隐藏选中的骨骼
-    public const int HideOtherBone = 11;        // 隐藏其他骨骼（只显示选中的）
-    public const int ShowAllBone = 12;          // 显示所有骨骼
-    public const int ResetBoneColor = 13;       // 重置骨骼颜色
-    public const int TransparentOtherBone = 14; // 透明其他骨骼（只有选中的不透明）
-    public const int ResetBoneTransparency = 15; // 重置骨骼透明度
+    public int id;              // 骨骼ID
+}
+
+/// <summary>
+/// App调用Unity功能的消息代码（App -> Unity）
+/// </summary>
+public static class AppToUnityCode
+{
+    public const int ShowModel = 1;                  // 显示模型
+    public const int HideModel = 2;                  // 隐藏模型
+    public const int ReceiveBoneConfig = 3;          // 接收骨骼配置
+    public const int ExportBoneConfig = 4;           // 导出骨骼配置（请求导出）
+    public const int ShowByType = 5;                 // 根据类型显示
+    public const int ShowByPosition = 6;             // 根据位置显示
+    public const int HideBone = 10;                  // 隐藏选中的骨骼
+    public const int HideOtherBone = 11;             // 隐藏其他骨骼（只显示选中的）
+    public const int ShowAllBone = 12;               // 显示所有骨骼
+    public const int ResetBoneColor = 13;            // 重置骨骼颜色
+    public const int TransparentOtherBone = 14;      // 透明其他骨骼（只有选中的不透明）
+    public const int ResetBoneTransparency = 15;     // 重置骨骼透明度
+}
+
+/// <summary>
+/// Unity主动通知App的消息代码（Unity -> App）
+/// </summary>
+public static class UnityToAppCode
+{
+    public const int BoneSelected = 1;               // 骨骼被选中（用户点击时自动发送）
+    public const int ExportBoneConfigResult = 2;     // 导出骨骼配置结果（响应App请求）
 }
 
 public class ButtonBehavior : MonoBehaviour
@@ -123,63 +137,63 @@ public class ButtonBehavior : MonoBehaviour
     }
 
     /// <summary>
-    /// 处理具体业务消息
+    /// 处理具体业务消息（来自App的消息）
     /// </summary>
     private void ProcessMessage(int code, string msg)
     {
         switch (code)
         {
-            case MessageCode.ShowModel:
+            case AppToUnityCode.ShowModel:
                 ShowModel();
                 break;
             
-            case MessageCode.HideModel:
+            case AppToUnityCode.HideModel:
                 HideModel();
                 break;
             
-            case MessageCode.ReceiveBoneConfig:
+            case AppToUnityCode.ReceiveBoneConfig:
                 ReceiveBoneConfigInternal(msg);
                 break;
             
-            case MessageCode.ExportBoneConfig:
+            case AppToUnityCode.ExportBoneConfig:
                 ExportBoneConfig();
                 break;
             
-            case MessageCode.ShowByType:
+            case AppToUnityCode.ShowByType:
                 if (int.TryParse(msg, out int type))
                 {
                     ShowModelByType(type);
                 }
                 break;
             
-            case MessageCode.ShowByPosition:
+            case AppToUnityCode.ShowByPosition:
                 if (int.TryParse(msg, out int position))
                 {
                     ShowModelByPosition(position);
                 }
                 break;
             
-            case MessageCode.HideBone:
+            case AppToUnityCode.HideBone:
                 HideBone();
                 break;
             
-            case MessageCode.HideOtherBone:
+            case AppToUnityCode.HideOtherBone:
                 HideOtherBone();
                 break;
             
-            case MessageCode.ShowAllBone:
+            case AppToUnityCode.ShowAllBone:
                 ShowAllBone();
                 break;
             
-            case MessageCode.ResetBoneColor:
+            case AppToUnityCode.ResetBoneColor:
                 ResetBoneColor();
                 break;
             
-            case MessageCode.TransparentOtherBone:
+            case AppToUnityCode.TransparentOtherBone:
                 TransparentOtherBone();
                 break;
             
-            case MessageCode.ResetBoneTransparency:
+            case AppToUnityCode.ResetBoneTransparency:
                 ResetBoneTransparency();
                 break;
             
@@ -216,53 +230,19 @@ public class ButtonBehavior : MonoBehaviour
     }
 
     /// <summary>
-    /// 序列化单个骨骼数据为JSON字符串
-    /// </summary>
-    public string SerializeBoneData(BoneData data)
-    {
-        return JsonConvert.SerializeObject(data);
-    }
-
-    /// <summary>
     /// 序列化骨骼数据列表为JSON字符串
     /// </summary>
-    public string SerializeBoneDataList(List<BoneData> dataList)
+    private string SerializeBoneDataList(List<BoneData> dataList)
     {
         return JsonConvert.SerializeObject(dataList);
     }
 
     /// <summary>
-    /// 反序列化JSON字符串为单个骨骼数据
-    /// </summary>
-    public BoneData DeserializeBoneData(string jsonString)
-    {
-        return JsonConvert.DeserializeObject<BoneData>(jsonString);
-    }
-
-    /// <summary>
     /// 反序列化JSON字符串为骨骼数据列表
     /// </summary>
-    public List<BoneData> DeserializeBoneDataList(string jsonString)
+    private List<BoneData> DeserializeBoneDataList(string jsonString)
     {
         return JsonConvert.DeserializeObject<List<BoneData>>(jsonString);
-    }
-
-    /// <summary>
-    /// 序列化骨骼数据并发送到移动端
-    /// </summary>
-    public void SendBoneData(BoneData data)
-    {
-        string msg = SerializeBoneData(data);
-        SendWrappedMessage(MessageCode.SendBoneData, msg);
-    }
-
-    /// <summary>
-    /// 序列化骨骼数据列表并发送到移动端
-    /// </summary>
-    public void SendBoneDataList(List<BoneData> dataList)
-    {
-        string msg = SerializeBoneDataList(dataList);
-        SendWrappedMessage(MessageCode.SendBoneDataList, msg);
     }
 
     /// <summary>
@@ -307,7 +287,7 @@ public class ButtonBehavior : MonoBehaviour
         Debug.Log("---- 导出骨骼配置 ----");
         List<BoneData> boneDataList = GameObjectManager.Instance.ExportBoneConfig();
         string msg = SerializeBoneDataList(boneDataList);
-        SendWrappedMessage(MessageCode.ExportBoneConfig, msg);
+        SendWrappedMessage(UnityToAppCode.ExportBoneConfigResult, msg);
     }
 
     /// <summary>
@@ -337,7 +317,17 @@ public class ButtonBehavior : MonoBehaviour
     public void NotifyBoneSelected(int boneId)
     {
         Debug.Log($"---- 通知移动端骨骼被选中 ---- boneId: {boneId}");
-        SendWrappedMessage(MessageCode.BoneSelected, boneId.ToString());
+        
+        // 创建骨骼点击信息（只包含ID，App端根据ID获取完整数据）
+        BoneClickInfo clickInfo = new BoneClickInfo
+        {
+            id = boneId
+        };
+        
+        // 序列化骨骼点击信息
+        string boneInfoJson = JsonConvert.SerializeObject(clickInfo);
+        Debug.Log($"发送骨骼信息: {boneInfoJson}");
+        SendWrappedMessage(UnityToAppCode.BoneSelected, boneInfoJson);
     }
 
     /// <summary>
