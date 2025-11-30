@@ -18,7 +18,7 @@ public class BoneMod : SingletonMod<BoneMod>,IMod
             {
                 return selectedBoneIds[selectedBoneIds.Count - 1];
             }
-            return  0;
+            return 0;
         }
 
         set
@@ -26,24 +26,78 @@ public class BoneMod : SingletonMod<BoneMod>,IMod
             if (value == 0)
             {
                 selectedBoneIds.Clear();
+                GameObjectManager.Instance.ResetBoneColor();
             }
             else
             {
-                selectedBoneIds.Add(value);
-                if (GameObjectManager.Instance.Body != null)
+                // 检查是否已选中该骨骼，如果已选中则取消选中
+                int existingIndex = selectedBoneIds.IndexOf(value);
+                if (existingIndex >= 0)
                 {
-                    GameObjectManager.Instance.SelectBone(selectedBoneIds[selectedBoneIds.Count - 1]);
+                    // 取消选中：移除该骨骼
+                    selectedBoneIds.RemoveAt(existingIndex);
                     
-                    // 通知移动端骨骼被选中
-                    ButtonBehavior buttonBehavior = GameObject.FindObjectOfType<ButtonBehavior>();
-                    if (buttonBehavior != null)
+                    if (selectedBoneIds.Count > 0)
                     {
-                        buttonBehavior.NotifyBoneSelected(selectedBoneIds[selectedBoneIds.Count - 1]);
+                        // 还有其他选中的骨骼，高亮最后一个
+                        GameObjectManager.Instance.SelectBone(selectedBoneIds[selectedBoneIds.Count - 1]);
+                    }
+                    else
+                    {
+                        // 没有选中的骨骼了，重置颜色
+                        GameObjectManager.Instance.ResetBoneColor();
+                    }
+                    
+                    // 通知移动端骨骼取消选中
+                    NotifyBoneDeselected(value);
+                }
+                else
+                {
+                    // 新选中骨骼
+                    selectedBoneIds.Add(value);
+                    if (GameObjectManager.Instance.Body)
+                    {
+                        GameObjectManager.Instance.SelectBone(value);
+                        
+                        // 通知移动端骨骼被选中
+                        NotifyBoneSelected(value);
                     }
                 }
             }
         }
-        
+    }
+
+    /// <summary>
+    /// 通知移动端骨骼被选中
+    /// </summary>
+    private void NotifyBoneSelected(int boneId)
+    {
+        ButtonBehavior buttonBehavior = GameObject.FindObjectOfType<ButtonBehavior>();
+        if (buttonBehavior)
+        {
+            buttonBehavior.NotifyBoneSelected(boneId);
+        }
+    }
+
+    /// <summary>
+    /// 通知移动端骨骼取消选中
+    /// </summary>
+    private void NotifyBoneDeselected(int boneId)
+    {
+        ButtonBehavior buttonBehavior = GameObject.FindObjectOfType<ButtonBehavior>();
+        if (buttonBehavior)
+        {
+            buttonBehavior.NotifyBoneDeselected(boneId);
+        }
+    }
+
+    /// <summary>
+    /// 清除所有选中状态
+    /// </summary>
+    public void ClearSelection()
+    {
+        selectedBoneIds.Clear();
+        GameObjectManager.Instance.ResetBoneColor();
     }
 
     public override void Initialize()

@@ -51,11 +51,18 @@ public static class AppToUnityCode
     public const int ShowByType = 5;                 // 根据类型显示
     public const int ShowByPosition = 6;             // 根据位置显示
     public const int HideBone = 10;                  // 隐藏选中的骨骼
-    public const int HideOtherBone = 11;             // 隐藏其他骨骼（只显示选中的）
-    public const int ShowAllBone = 12;               // 显示所有骨骼
-    public const int ResetBoneColor = 13;            // 重置骨骼颜色
-    public const int TransparentOtherBone = 14;      // 透明其他骨骼（只有选中的不透明）
-    public const int ResetBoneTransparency = 15;     // 重置骨骼透明度
+    public const int ShowBone = 11;                  // 显示选中的骨骼
+    public const int HideOtherBone = 12;             // 隐藏其他骨骼（只显示选中的）
+    public const int ShowOtherBone = 13;             // 显示其他骨骼
+    public const int ShowAllBone = 14;               // 显示所有骨骼
+    public const int TransparentBone = 15;           // 透明选中的骨骼
+    public const int SolidBone = 16;                 // 实体选中的骨骼（恢复不透明）
+    public const int TransparentOtherBone = 17;      // 透明其他骨骼（只有选中的不透明）
+    public const int SolidOtherBone = 18;            // 实体其他骨骼（恢复不透明）
+    public const int ResetBoneColor = 19;            // 重置骨骼颜色
+    public const int ResetBoneTransparency = 20;     // 重置骨骼透明度
+    public const int ResetTransform = 21;            // 复位模型变换（位置、角度、大小）
+    public const int ResetAll = 22;                  // 完全重置（包括选中状态）
 }
 
 /// <summary>
@@ -65,6 +72,7 @@ public static class UnityToAppCode
 {
     public const int BoneSelected = 1;               // 骨骼被选中（用户点击时自动发送）
     public const int ExportBoneConfigResult = 2;     // 导出骨骼配置结果（响应App请求）
+    public const int BoneDeselected = 3;             // 骨骼取消选中（用户再次点击时自动发送）
 }
 
 public class ButtonBehavior : MonoBehaviour
@@ -177,8 +185,16 @@ public class ButtonBehavior : MonoBehaviour
                 HideBone();
                 break;
             
+            case AppToUnityCode.ShowBone:
+                ShowBone();
+                break;
+            
             case AppToUnityCode.HideOtherBone:
                 HideOtherBone();
+                break;
+            
+            case AppToUnityCode.ShowOtherBone:
+                ShowOtherBone();
                 break;
             
             case AppToUnityCode.ShowAllBone:
@@ -189,12 +205,32 @@ public class ButtonBehavior : MonoBehaviour
                 ResetBoneColor();
                 break;
             
+            case AppToUnityCode.TransparentBone:
+                TransparentBone();
+                break;
+            
+            case AppToUnityCode.SolidBone:
+                SolidBone();
+                break;
+            
             case AppToUnityCode.TransparentOtherBone:
                 TransparentOtherBone();
                 break;
             
+            case AppToUnityCode.SolidOtherBone:
+                SolidOtherBone();
+                break;
+            
             case AppToUnityCode.ResetBoneTransparency:
                 ResetBoneTransparency();
+                break;
+            
+            case AppToUnityCode.ResetTransform:
+                ResetTransform();
+                break;
+            
+            case AppToUnityCode.ResetAll:
+                ResetAll();
                 break;
             
             default:
@@ -318,16 +354,22 @@ public class ButtonBehavior : MonoBehaviour
     {
         Debug.Log($"---- 通知移动端骨骼被选中 ---- boneId: {boneId}");
         
-        // 创建骨骼点击信息（只包含ID，App端根据ID获取完整数据）
-        BoneClickInfo clickInfo = new BoneClickInfo
-        {
-            id = boneId
-        };
-        
-        // 序列化骨骼点击信息
+        BoneClickInfo clickInfo = new BoneClickInfo { id = boneId };
         string boneInfoJson = JsonConvert.SerializeObject(clickInfo);
-        Debug.Log($"发送骨骼信息: {boneInfoJson}");
         SendWrappedMessage(UnityToAppCode.BoneSelected, boneInfoJson);
+    }
+
+    /// <summary>
+    /// 通知移动端骨骼取消选中
+    /// </summary>
+    /// <param name="boneId">取消选中的骨骼ID</param>
+    public void NotifyBoneDeselected(int boneId)
+    {
+        Debug.Log($"---- 通知移动端骨骼取消选中 ---- boneId: {boneId}");
+        
+        BoneClickInfo clickInfo = new BoneClickInfo { id = boneId };
+        string boneInfoJson = JsonConvert.SerializeObject(clickInfo);
+        SendWrappedMessage(UnityToAppCode.BoneDeselected, boneInfoJson);
     }
 
     /// <summary>
@@ -340,12 +382,30 @@ public class ButtonBehavior : MonoBehaviour
     }
 
     /// <summary>
+    /// 显示选中的骨骼（恢复被隐藏的选中骨骼）
+    /// </summary>
+    public void ShowBone()
+    {
+        Debug.Log("---- 显示选中的骨骼 ----");
+        GameObjectManager.Instance.ShowBone();
+    }
+
+    /// <summary>
     /// 隐藏其他骨骼（只显示选中的）
     /// </summary>
     public void HideOtherBone()
     {
         Debug.Log("---- 隐藏其他骨骼 ----");
         GameObjectManager.Instance.HideOtherBone();
+    }
+
+    /// <summary>
+    /// 显示其他骨骼（恢复被隐藏的其他骨骼）
+    /// </summary>
+    public void ShowOtherBone()
+    {
+        Debug.Log("---- 显示其他骨骼 ----");
+        GameObjectManager.Instance.ShowOtherBone();
     }
 
     /// <summary>
@@ -367,12 +427,39 @@ public class ButtonBehavior : MonoBehaviour
     }
 
     /// <summary>
+    /// 透明选中的骨骼
+    /// </summary>
+    public void TransparentBone()
+    {
+        Debug.Log("---- 透明选中的骨骼 ----");
+        GameObjectManager.Instance.TransparentBone();
+    }
+
+    /// <summary>
+    /// 实体选中的骨骼（恢复不透明）
+    /// </summary>
+    public void SolidBone()
+    {
+        Debug.Log("---- 实体选中的骨骼 ----");
+        GameObjectManager.Instance.SolidBone();
+    }
+
+    /// <summary>
     /// 透明其他骨骼（只有选中的不透明）
     /// </summary>
     public void TransparentOtherBone()
     {
         Debug.Log("---- 透明其他骨骼 ----");
         GameObjectManager.Instance.TransparentOtherBone();
+    }
+
+    /// <summary>
+    /// 实体其他骨骼（恢复不透明）
+    /// </summary>
+    public void SolidOtherBone()
+    {
+        Debug.Log("---- 实体其他骨骼 ----");
+        GameObjectManager.Instance.SolidOtherBone();
     }
 
     /// <summary>
@@ -383,5 +470,22 @@ public class ButtonBehavior : MonoBehaviour
         Debug.Log("---- 重置骨骼透明度 ----");
         GameObjectManager.Instance.ResetBoneTransparency();
     }
-    
+
+    /// <summary>
+    /// 复位模型变换（位置、角度、大小恢复初始值）
+    /// </summary>
+    public void ResetTransform()
+    {
+        Debug.Log("---- 复位模型变换 ----");
+        GameObjectManager.Instance.ResetTransform();
+    }
+
+    /// <summary>
+    /// 完全重置（包括模型变换和选中状态）
+    /// </summary>
+    public void ResetAll()
+    {
+        Debug.Log("---- 完全重置 ----");
+        GameObjectManager.Instance.ResetAll();
+    }
 }

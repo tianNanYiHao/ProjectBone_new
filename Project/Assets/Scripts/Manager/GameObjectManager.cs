@@ -292,6 +292,9 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
                 base.OnApplicationPause(pauseStatus);
         }
         
+        /// <summary>
+        /// 隐藏选中的骨骼
+        /// </summary>
         public void HideBone()
         {
                 var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
@@ -307,16 +310,209 @@ public class GameObjectManager:SingletonManager<GameObjectManager>, IGeneric
                                 }
                         }
                 }
-        }       
-      public void HideOtherBone()
-      {
-              var boneId = BoneMod.Instance.CurrentBoneId;
-              for (int i = 0; i < skeletonInfos.Count; i++)
-              {
-                      SkeletonInfo skeletonInfo = skeletonInfos[i];
-                        skeletonInfo.boneGameObject.SetActive((skeletonInfo.boneId == boneId));
-              }
-      }
+        }
+
+        /// <summary>
+        /// 显示选中的骨骼（恢复被隐藏的选中骨骼）
+        /// </summary>
+        public void ShowBone()
+        {
+                var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        for (int j = 0; j < selectedBoneIds.Count; j++)
+                        {
+                                if (skeletonInfo.boneId == selectedBoneIds[j])
+                                {
+                                        skeletonInfo.boneGameObject.SetActive(true);
+                                }
+                        }
+                }
+        }
+
+        /// <summary>
+        /// 隐藏其他骨骼（只显示选中的）
+        /// </summary>
+        public void HideOtherBone()
+        {
+                var boneId = BoneMod.Instance.CurrentBoneId;
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        skeletonInfo.boneGameObject.SetActive(skeletonInfo.boneId == boneId);
+                }
+        }
+
+        /// <summary>
+        /// 显示其他骨骼（恢复被隐藏的其他骨骼）
+        /// </summary>
+        public void ShowOtherBone()
+        {
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        skeletonInfo.boneGameObject.SetActive(true);
+                }
+        }
+
+        /// <summary>
+        /// 透明选中的骨骼（选中的骨骼变透明）
+        /// </summary>
+        public void TransparentBone()
+        {
+                var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
+                if (selectedBoneIds.Count == 0)
+                {
+                        Debug.LogWarning("没有选中的骨骼");
+                        return;
+                }
+
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        bool isSelected = false;
+                        for (int j = 0; j < selectedBoneIds.Count; j++)
+                        {
+                                if (skeletonInfo.boneId == selectedBoneIds[j])
+                                {
+                                        isSelected = true;
+                                        break;
+                                }
+                        }
+
+                        if (isSelected)
+                        {
+                                SetMaterialTransparent(skeletonInfo.meshRenderer.material, SelectColor, 0.3f);
+                        }
+                }
+        }
+
+        /// <summary>
+        /// 实体选中的骨骼（选中的骨骼恢复不透明）
+        /// </summary>
+        public void SolidBone()
+        {
+                var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
+                if (selectedBoneIds.Count == 0)
+                {
+                        Debug.LogWarning("没有选中的骨骼");
+                        return;
+                }
+
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        bool isSelected = false;
+                        for (int j = 0; j < selectedBoneIds.Count; j++)
+                        {
+                                if (skeletonInfo.boneId == selectedBoneIds[j])
+                                {
+                                        isSelected = true;
+                                        break;
+                                }
+                        }
+
+                        if (isSelected)
+                        {
+                                SetMaterialOpaque(skeletonInfo.meshRenderer.material, SelectColor);
+                        }
+                }
+        }
+
+        /// <summary>
+        /// 实体其他骨骼（其他骨骼恢复不透明，选中的保持当前状态）
+        /// </summary>
+        public void SolidOtherBone()
+        {
+                var selectedBoneIds = BoneMod.Instance.selectedBoneIds;
+
+                for (int i = 0; i < skeletonInfos.Count; i++)
+                {
+                        SkeletonInfo skeletonInfo = skeletonInfos[i];
+                        bool isSelected = false;
+                        for (int j = 0; j < selectedBoneIds.Count; j++)
+                        {
+                                if (skeletonInfo.boneId == selectedBoneIds[j])
+                                {
+                                        isSelected = true;
+                                        break;
+                                }
+                        }
+
+                        if (!isSelected)
+                        {
+                                SetMaterialOpaque(skeletonInfo.meshRenderer.material, NormalColor);
+                        }
+                }
+        }
+
+        /// <summary>
+        /// 设置材质为透明模式
+        /// </summary>
+        private void SetMaterialTransparent(Material material, Color baseColor, float alpha)
+        {
+                material.SetFloat("_Mode", 3); // Transparent mode
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
+                material.DisableKeyword("_ALPHATEST_ON");
+                material.EnableKeyword("_ALPHABLEND_ON");
+                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = 3000;
+
+                Color color = baseColor;
+                color.a = alpha;
+                material.color = color;
+        }
+
+        /// <summary>
+        /// 设置材质为不透明模式
+        /// </summary>
+        private void SetMaterialOpaque(Material material, Color baseColor)
+        {
+                material.SetFloat("_Mode", 0); // Opaque mode
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_ZWrite", 1);
+                material.DisableKeyword("_ALPHATEST_ON");
+                material.DisableKeyword("_ALPHABLEND_ON");
+                material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                material.renderQueue = -1;
+
+                Color color = baseColor;
+                color.a = 1f;
+                material.color = color;
+        }
+
+        /// <summary>
+        /// 复位模型变换（位置、角度、大小恢复初始值）
+        /// </summary>
+        public void ResetTransform()
+        {
+                if (!Body)
+                {
+                        return;
+                }
+                Body.transform.position = initpos;
+                Body.transform.localScale = initscale;
+                Body.transform.eulerAngles = initangle;
+        }
+
+        /// <summary>
+        /// 完全重置（包括模型变换和选中状态）
+        /// </summary>
+        public void ResetAll()
+        {
+                // 重置模型变换
+                ResetTransform();
+                // 重置骨骼透明度
+                ResetBoneTransparency();
+                // 显示所有骨骼
+                ShowBoneByType((int)BoneShowType.All);
+                // 清除选中状态
+                BoneMod.Instance.ClearSelection();
+        }
 
       public void ShowBoneByType(int type)
       {
