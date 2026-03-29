@@ -5,8 +5,3 @@
 /Project/.vs/
 /Project/.utmp/
 /Project/.idea/
-
-# 大文件和源文件
-*.zip
-*.spp
-*.FBX
