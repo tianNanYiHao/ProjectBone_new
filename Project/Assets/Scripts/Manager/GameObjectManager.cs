@@ -38,7 +38,8 @@ public class GameObjectManager : SingletonManager<GameObjectManager>, IGeneric
         set
         {
             _boneShowType = value;
-            _visibilityService.ShowBoneByType(_boneShowType);
+            // 同时应用类型过滤和部位过滤
+            _visibilityService.ShowBoneByTypeAndPos(_boneShowType, _selectBoneType);
         }
     }
 
@@ -48,7 +49,8 @@ public class GameObjectManager : SingletonManager<GameObjectManager>, IGeneric
         set
         {
             _selectBoneType = value;
-            _visibilityService.SelectBoneByPos(_selectBoneType);
+            // 同时应用类型过滤和部位过滤
+            _visibilityService.ShowBoneByTypeAndPos(_boneShowType, _selectBoneType);
         }
     }
 
@@ -128,12 +130,14 @@ public class GameObjectManager : SingletonManager<GameObjectManager>, IGeneric
 
     public void ShowBoneByType(int type)
     {
-        _visibilityService.ShowBoneByType(type);
+        _boneShowType = type;
+        _visibilityService.ShowBoneByTypeAndPos(_boneShowType, _selectBoneType);
     }
 
     public void SelectBoneByPos(int pos)
     {
-        _visibilityService.SelectBoneByPos(pos);
+        _selectBoneType = pos;
+        _visibilityService.ShowBoneByTypeAndPos(_boneShowType, _selectBoneType);
     }
 
     public SkeletonInfo? GetSkeletonInfo(int boneid)
@@ -152,7 +156,9 @@ public class GameObjectManager : SingletonManager<GameObjectManager>, IGeneric
     {
         _bodyModelService.ResetTransform();
         _materialService.ResetBoneTransparency();
-        _visibilityService.ShowBoneByType((int)BoneShowType.All);
+        _boneShowType = (int)BoneShowType.All;
+        _selectBoneType = (int)EnumPos.All;
+        _visibilityService.ShowBoneByTypeAndPos(_boneShowType, _selectBoneType);
         BoneMod.Instance.ClearSelection();
     }
 

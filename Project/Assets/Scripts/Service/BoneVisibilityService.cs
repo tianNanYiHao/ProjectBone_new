@@ -41,6 +41,32 @@ public class BoneVisibilityService
     }
 
     /// <summary>
+    /// 同时按骨骼类型和身体部位过滤显示。
+    /// 骨骼必须同时满足类型和部位条件才会显示。
+    /// 当 pos 为 EnumPos.All 时不做部位过滤。
+    /// </summary>
+    public void ShowBoneByTypeAndPos(int type, int pos)
+    {
+        var items = _registry.GetItems(out int count);
+        bool showAllType = (type & (int)BoneShowType.All) == (int)BoneShowType.All;
+        bool showAllPos = (pos & (int)EnumPos.All) == (int)EnumPos.All;
+
+        for (int i = 0; i < count; i++)
+        {
+            ref var info = ref items[i];
+
+            // 类型过滤
+            bool typeVisible = showAllType || ((type & (int)info.bone.Boneenum) != 0);
+
+            // 部位过滤
+            bool posVisible = showAllPos || ((info.bone.Pos & pos) != 0);
+
+            // 两个条件都满足才显示
+            info.boneGameObject.SetActive(typeVisible && posVisible);
+        }
+    }
+
+    /// <summary>
     /// 按身体部位过滤选择骨骼。单次遍历，使用位运算判定。
     /// </summary>
     public void SelectBoneByPos(int pos)
