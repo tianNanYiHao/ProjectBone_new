@@ -53,7 +53,8 @@ public class BoneMod : SingletonMod<BoneMod>,IMod
                 }
                 else
                 {
-                    // 新选中骨骼
+                    // 新选中骨骼（单选模式：清除之前的选中）
+                    selectedBoneIds.Clear();
                     selectedBoneIds.Add(value);
                     if (GameObjectManager.Instance.Body)
                     {

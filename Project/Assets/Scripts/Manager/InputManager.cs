@@ -2,151 +2,375 @@
 using DigitalRubyShared;
 using UnityEngine;
 
-public class InputManager:SingletonManager<InputManager>, IGeneric
+public class InputManager : SingletonManager<InputManager>, IGeneric
 {
-    private PanGestureRecognizer panGesture;
+    // 手势识别器
+    private PanGestureRecognizer oneFingerPanGesture;
+    private PanGestureRecognizer twoFingerPanGesture;
     private ScaleGestureRecognizer scaleGesture;
-    private OneTouchRotateGestureRecognizer rotateGesture;
+    private TapGestureRecognizer tapGesture;
+
     public LayerMask targetLayer;
-    public Vector3 scalemin = new Vector3(0.5f, 0.5f, 0.5f);
-    public Vector3 scalemax = new Vector3(10f, 10f, 10f);
+
+    // 缩放限制
+    public float scaleMin = 0.5f;
+    public float scaleMax = 10f;
+
+    // 灵敏度
+    public float rotationSpeed = 0.3f;
+    public float panSpeed = 0.003f;
+
+    // 惯性参数
+    private bool isRotationInertia = false;
+    private Vector2 rotationVelocity;
+    private float inertiaDecay = 5f;           // 惯性衰减速度
+    private float inertiaThreshold = 0.1f;     // 惯性停止阈值
+    private float velocitySmoothing = 0.1f;    // 速度平滑系数
+
+    // 平滑旋转
+    private Vector2 smoothedDelta;
+    private Vector2 lastDelta;
+
+    // 旋转轴锁定
+    private bool axisLocked = false;
+    private bool lockedToHorizontal = false;
+    private float axisLockThreshold = 5f;      // 累计多少像素后锁定方向
+    private Vector2 accumulatedDelta;
+
     public override void Initialize()
     {
         base.Initialize();
-       
         targetLayer = 1 << UnityLayer.Layer_Body;
-        CreatePanGesture();
+
+        CreateTapGesture();
+        CreateOneFingerPanGesture();
+        CreateTwoFingerPanGesture();
         CreateScaleGesture();
-        CreateRotateGesture();
-         panGesture.AllowSimultaneousExecution(scaleGesture);
-        scaleGesture.AllowSimultaneousExecution(panGesture);
-      
+
+        // 双指平移和缩放可以同时执行
+        twoFingerPanGesture.AllowSimultaneousExecution(scaleGesture);
+        scaleGesture.AllowSimultaneousExecution(twoFingerPanGesture);
+
+        // 单指拖拽和双指平移允许同时执行（由回调内部判断是否响应）
+        oneFingerPanGesture.AllowSimultaneousExecution(twoFingerPanGesture);
+        twoFingerPanGesture.AllowSimultaneousExecution(oneFingerPanGesture);
+        oneFingerPanGesture.AllowSimultaneousExecution(scaleGesture);
+        scaleGesture.AllowSimultaneousExecution(oneFingerPanGesture);
+
+        // Tap 必须等单指拖拽判定失败才触发
+        tapGesture.RequireGestureRecognizerToFail = oneFingerPanGesture;
     }
-    //创建缩放手势
+
+    #region 手势创建
+
+    private void CreateTapGesture()
+    {
+        tapGesture = new TapGestureRecognizer();
+        tapGesture.StateUpdated += OnTapGesture;
+        FingersScript.Instance.AddGesture(tapGesture);
+    }
+
+    private void CreateOneFingerPanGesture()
+    {
+        oneFingerPanGesture = new PanGestureRecognizer();
+        oneFingerPanGesture.MinimumNumberOfTouchesToTrack = 1;
+        oneFingerPanGesture.MaximumNumberOfTouchesToTrack = 1;
+        oneFingerPanGesture.ThresholdUnits = 0.01f;
+        oneFingerPanGesture.StateUpdated += OnOneFingerPanGesture;
+        FingersScript.Instance.AddGesture(oneFingerPanGesture);
+    }
+
+    private void CreateTwoFingerPanGesture()
+    {
+        twoFingerPanGesture = new PanGestureRecognizer();
+        twoFingerPanGesture.MinimumNumberOfTouchesToTrack = 2;
+        twoFingerPanGesture.MaximumNumberOfTouchesToTrack = 2;
+        twoFingerPanGesture.ThresholdUnits = 0.01f;
+        twoFingerPanGesture.StateUpdated += OnTwoFingerPanGesture;
+        FingersScript.Instance.AddGesture(twoFingerPanGesture);
+    }
+
     private void CreateScaleGesture()
     {
         scaleGesture = new ScaleGestureRecognizer();
-        scaleGesture.StateUpdated += ScaleGestureCallback;
+        scaleGesture.ZoomSpeed = 3.0f;
+        scaleGesture.StateUpdated += OnScaleGesture;
         FingersScript.Instance.AddGesture(scaleGesture);
     }
-    
-    private void ScaleGestureCallback(DigitalRubyShared.GestureRecognizer gesture)
+
+    #endregion
+
+    #region 手势回调
+
+    private void OnTapGesture(GestureRecognizer gesture)
+    {
+        if (gesture.State == GestureRecognizerState.Ended)
+        {
+            // 点击时停止惯性
+            isRotationInertia = false;
+            RaycastFromInput(new Vector2(gesture.FocusX, gesture.FocusY));
+        }
+    }
+
+    private void OnOneFingerPanGesture(GestureRecognizer gesture)
+    {
+        Transform body = GetBodyTransform();
+        if (body == null) return;
+
+        // 如果当前有多指触摸，单指手势不处理旋转（让双指平移/缩放优先）
+        if (Input.touchCount >= 2) return;
+
+        if (gesture.State == GestureRecognizerState.Began)
+        {
+            // 新一次滑动开始，重置轴锁定
+            axisLocked = false;
+            accumulatedDelta = Vector2.zero;
+            lastDelta = Vector2.zero;
+            isRotationInertia = false;
+        }
+        else if (gesture.State == GestureRecognizerState.Executing)
+        {
+            float deltaX = oneFingerPanGesture.DeltaX;
+            float deltaY = oneFingerPanGesture.DeltaY;
+
+            // 如果还没锁定方向，累计移动量来判断
+            if (!axisLocked)
+            {
+                accumulatedDelta.x += Mathf.Abs(deltaX);
+                accumulatedDelta.y += Mathf.Abs(deltaY);
+
+                float total = accumulatedDelta.x + accumulatedDelta.y;
+                if (total >= axisLockThreshold)
+                {
+                    axisLocked = true;
+                    lockedToHorizontal = accumulatedDelta.x >= accumulatedDelta.y;
+                }
+                else
+                {
+                    // 还没达到锁定阈值，先不旋转
+                    return;
+                }
+            }
+
+            // 只保留锁定方向的分量
+            if (lockedToHorizontal)
+            {
+                deltaY = 0f;
+            }
+            else
+            {
+                deltaX = 0f;
+            }
+
+            // 平滑处理
+            smoothedDelta.x = Mathf.Lerp(lastDelta.x, deltaX, 1f - velocitySmoothing);
+            smoothedDelta.y = Mathf.Lerp(lastDelta.y, deltaY, 1f - velocitySmoothing);
+            lastDelta = smoothedDelta;
+
+            ApplyRotation(smoothedDelta.x * rotationSpeed, smoothedDelta.y * rotationSpeed);
+
+            // 记录速度用于惯性
+            rotationVelocity.x = smoothedDelta.x * rotationSpeed;
+            rotationVelocity.y = smoothedDelta.y * rotationSpeed;
+        }
+        else if (gesture.State == GestureRecognizerState.Ended)
+        {
+            // 松手时如果速度够大，启动惯性
+            if (rotationVelocity.magnitude > inertiaThreshold)
+            {
+                isRotationInertia = true;
+            }
+            lastDelta = Vector2.zero;
+        }
+    }
+
+    private void OnTwoFingerPanGesture(GestureRecognizer gesture)
     {
         if (gesture.State == GestureRecognizerState.Executing)
         {
-           
-            Vector3 scale = GameObjectManager.Instance.Body.transform.localScale;
-            scale *= scaleGesture.ScaleMultiplier;
-            scale.x = Mathf.Clamp(scale.x, scalemin.x, scalemax.x);
-            scale.y = Mathf.Clamp(scale.y, scalemin.y, scalemax.y);
-            scale.z = Mathf.Clamp(scale.z, scalemin.z, scalemax.z);
-            GameObjectManager.Instance.Body.transform.localScale = scale;
-            //GameObjectManager.Instance.Body.transform.localScale *= scaleGesture.ScaleMultiplier;
-         
-        }
-    }
-    
-    //创建旋转手势
-    private void CreateRotateGesture()
-    {
-        
-        
-        rotateGesture = new OneTouchRotateGestureRecognizer();
-        rotateGesture.StateUpdated += RotateGestureCallback;
-        FingersScript.Instance.AddGesture(rotateGesture);
-    }
-    private void RotateGestureCallback(DigitalRubyShared.GestureRecognizer gesture)
-    {
-        if (gesture.State == GestureRecognizerState.Executing )
-        {
-        
-         float rotationSpeed = 1f; // 根据需要调整这个值
-         GameObjectManager.Instance.Body.transform.Rotate(Vector3.up, -panGesture.DeltaX * rotationSpeed, Space.World);
-          GameObjectManager.Instance.Body.transform.Rotate(Vector3.right, panGesture.DeltaY * rotationSpeed, Space.World);
-        }
-       
-    }
-    //创建拖拽手势
-    private void CreatePanGesture()
-    {
-        panGesture = new PanGestureRecognizer();
-        panGesture.MinimumNumberOfTouchesToTrack = 2;
-        panGesture.StateUpdated += PanGestureCallback;
-        FingersScript.Instance.AddGesture(panGesture);
-    }
-    
-    private void PanGestureCallback(DigitalRubyShared.GestureRecognizer gesture)
-    {
-        if (gesture.State == GestureRecognizerState.Executing)
-        {
-       
-           
-            float deltaX = panGesture.DeltaX / 500.0f*-1 ;
-            float deltaY = panGesture.DeltaY / 500.0f;
-            
-            Vector3 pos = GameObjectManager.Instance.Body.transform.position;
-            pos.x -= deltaX;
+            Transform body = GetBodyTransform();
+            if (body == null) return;
+
+            // 根据屏幕尺寸归一化，保证不同分辨率体验一致
+            float deltaX = twoFingerPanGesture.DeltaX * panSpeed;
+            float deltaY = twoFingerPanGesture.DeltaY * panSpeed;
+
+            Vector3 pos = body.position;
+            pos.x += deltaX;
             pos.y += deltaY;
-            GameObjectManager.Instance.Body.transform.position = pos;
+            body.position = pos;
         }
     }
-  
-  
 
+    private void OnScaleGesture(GestureRecognizer gesture)
+    {
+        if (gesture.State == GestureRecognizerState.Executing)
+        {
+            Transform body = GetBodyTransform();
+            if (body == null) return;
 
+            // 使用 Lerp 平滑缩放，避免跳变
+            float targetScale = body.localScale.x * scaleGesture.ScaleMultiplier;
+            targetScale = Mathf.Clamp(targetScale, scaleMin, scaleMax);
+
+            float smoothScale = Mathf.Lerp(body.localScale.x, targetScale, 0.5f);
+            body.localScale = Vector3.one * smoothScale;
+        }
+    }
+
+    #endregion
+
+    #region 核心逻辑
+
+    // 累计旋转角度
+    private float rotationYaw = 0f;    // 左右（绕世界Y轴）
+    private float rotationPitch = 0f;  // 上下（绕本地X轴）
+    private Quaternion initialRotation = Quaternion.identity;
+
+    private void ApplyRotation(float deltaX, float deltaY)
+    {
+        Transform body = GetBodyTransform();
+        if (body == null) return;
+
+        // 累加角度
+        rotationYaw += -deltaX;
+        rotationPitch += deltaY;
+
+        // 限制上下旋转范围，防止翻转
+        rotationPitch = Mathf.Clamp(rotationPitch, -90f, 90f);
+
+        // 上下旋转绕世界X轴（固定水平轴），左右旋转绕模型自身Y轴
+        // 先应用世界X轴的Pitch，再应用本地Y轴的Yaw
+        Quaternion pitchRotation = Quaternion.AngleAxis(rotationPitch, Vector3.right);
+        Quaternion yawRotation = Quaternion.AngleAxis(rotationYaw, Vector3.up);
+        body.rotation = pitchRotation * initialRotation * yawRotation;
+    }
+
+    /// <summary>
+    /// 重置旋转（复位时调用）
+    /// </summary>
+    public void ResetRotation()
+    {
+        rotationYaw = 0f;
+        rotationPitch = 0f;
+        Transform body = GetBodyTransform();
+        if (body != null)
+        {
+            body.rotation = initialRotation;
+        }
+    }
+
+    /// <summary>
+    /// 同步当前模型旋转到内部状态（模型加载后调用）
+    /// </summary>
+    public void SyncRotationFromBody()
+    {
+        Transform body = GetBodyTransform();
+        if (body != null)
+        {
+            initialRotation = body.rotation;
+            rotationYaw = 0f;
+            rotationPitch = 0f;
+        }
+    }
+
+    private void UpdateInertia(float deltaTime)
+    {
+        if (!isRotationInertia) return;
+
+        // 指数衰减
+        rotationVelocity = Vector2.Lerp(rotationVelocity, Vector2.zero, inertiaDecay * deltaTime);
+
+        if (rotationVelocity.magnitude < inertiaThreshold * 0.1f)
+        {
+            isRotationInertia = false;
+            rotationVelocity = Vector2.zero;
+            return;
+        }
+
+        ApplyRotation(rotationVelocity.x, rotationVelocity.y);
+    }
+
+    private Transform GetBodyTransform()
+    {
+        GameObject body = GameObjectManager.Instance.Body;
+        if (body == null) return null;
+        return body.transform;
+    }
+
+    #endregion
+
+    #region 射线检测
+
+    private void RaycastFromInput(Vector2 inputPosition)
+    {
+        Ray ray = UIManager.Instance.ModelCamera.ScreenPointToRay(inputPosition);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, Mathf.Infinity, targetLayer))
+        {
+            GameObject hitObj = hit.collider.gameObject;
+            if (!hitObj.activeInHierarchy) return;
+
+            MeshRenderer mr = hitObj.GetComponent<MeshRenderer>();
+            if (mr == null || !mr.enabled) return;
+
+            int boneId;
+            if (int.TryParse(hitObj.name, out boneId))
+            {
+                BoneMod.Instance.CurrentBoneId = boneId;
+                UserMod.Instance.Muscleid = boneId;
+                EventManager.Instance.TriggerEvent(EventDefine.BoneClickEvent, boneId);
+
+                // 打印选中骨骼的详细信息
+                if (BoneMod.Instance.boneDic.ContainsKey(boneId))
+                {
+                    Bone bone = BoneMod.Instance.boneDic[boneId];
+                    string typeCn = ((EnumBone)bone.Boneenum) switch
+                    {
+                        EnumBone.Bone => "骨骼",
+                        EnumBone.Muscle => "肌肉",
+                        EnumBone.Fascia => "筋膜",
+                        _ => "未知"
+                    };
+                    string posCn = GetPosChinese(bone.Pos);
+                    Debug.Log($"[选中骨骼] ID: {boneId}, 类型: {typeCn}({(EnumBone)bone.Boneenum}), 部位: {posCn}({(EnumPos)bone.Pos})");
+                }
+            }
+        }
+    }
+
+    #endregion
+
+    #region 辅助方法
+
+    private string GetPosChinese(int pos)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        if ((pos & (int)EnumPos.UpperLimbs) != 0) parts.Add("上肢");
+        if ((pos & (int)EnumPos.ShoulderBack) != 0) parts.Add("肩背");
+        if ((pos & (int)EnumPos.LowerLimbs) != 0) parts.Add("下肢");
+        if ((pos & (int)EnumPos.Pelvis) != 0) parts.Add("盆骨");
+        if ((pos & (int)EnumPos.HeadAndNeck) != 0) parts.Add("头颈");
+        if ((pos & (int)EnumPos.ChestAndAbdomen) != 0) parts.Add("胸腹");
+        if ((pos & (int)EnumPos.Spine) != 0) parts.Add("脊柱");
+        if ((pos & (int)EnumPos.Scapula) != 0) parts.Add("肩胛带");
+        return parts.Count > 0 ? string.Join(",", parts) : "无";
+    }
+
+    #endregion
 
     public override void Update(float time)
     {
         base.Update(time);
-        CheckBoneClick();
+        UpdateInertia(time);
     }
 
-    public void CheckBoneClick()
+    public override void Dispose()
     {
-        // 对于PC，使用鼠标输入
-        if (Input.GetMouseButtonDown(0))
-        {
-            RaycastFromInput(Input.mousePosition);
-        }
-
-        // 对于移动设备，使用触摸输入
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == UnityEngine.TouchPhase.Began)
-        {
-            RaycastFromInput(Input.GetTouch(0).position);
-        }
+        base.Dispose();
     }
-    
-    void RaycastFromInput(Vector2 inputPosition)
-    {
-       
-        // 将输入位置（鼠标位置或触摸位置）转换为从相机到屏幕的射线
-        Ray ray = UIManager.Instance.ModelCamera.ScreenPointToRay(inputPosition);
-        RaycastHit hit;
 
-        // 发射射线，最大距离设置为Mathf.Infinity表示射线长度无限
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, targetLayer))
-        {
-            // 如果射线与指定层上的对象相交，输出该对象的名称
-            string boneName = hit.collider.gameObject.name;
-            int boneId;
-           // 使用 int.TryParse() 判断是不是能够转换成id
-           if (int.TryParse(boneName, out  boneId))
-           {
-               
-               BoneMod.Instance.CurrentBoneId = boneId;
-               UserMod.Instance.Muscleid = boneId;
-               EventManager.Instance.TriggerEvent(EventDefine.BoneClickEvent ,boneId);
-           }
-           else
-           {
-               
-           }
-
-            
-          
-        }
-    }
-    
     public override void OnApplicationFocus(bool hasFocus)
     {
         base.OnApplicationFocus(hasFocus);
@@ -160,10 +384,5 @@ public class InputManager:SingletonManager<InputManager>, IGeneric
     public override void OnApplicationQuit()
     {
         base.OnApplicationQuit();
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 }

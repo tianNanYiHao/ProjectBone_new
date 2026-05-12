@@ -54,6 +54,34 @@ public static class UtilHelper
         // 最后，返回这个数字减去 1 的结果，这样就能保留原有的所有位，并在最前面加上一个 1
         return highestOne | num;
     }
+
+    // 按固定顺序移除下一个层级: [Muscle, Fascia]
+    public static int RemoveNextLayer(int showType)
+    {
+        int[] removalOrder = { (int)BoneShowType.Muscle, (int)BoneShowType.Fascia };
+        foreach (int layer in removalOrder)
+        {
+            if ((showType & layer) == layer)
+            {
+                return showType & ~layer;
+            }
+        }
+        return showType;
+    }
+
+    // 按固定顺序添加下一个层级: [Fascia, Muscle]
+    public static int AddNextLayer(int showType)
+    {
+        int[] additionOrder = { (int)BoneShowType.Fascia, (int)BoneShowType.Muscle };
+        foreach (int layer in additionOrder)
+        {
+            if ((showType & layer) != layer)
+            {
+                return showType | layer;
+            }
+        }
+        return showType;
+    }
        
 }
 public static class ObjectCreator

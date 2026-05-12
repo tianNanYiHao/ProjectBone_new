@@ -50,6 +50,7 @@ using UnityEngine;
             //GameObject.DontDestroyOnLoad(eventSystem);
             //创建一个model相机
             ModelCamera = new GameObject("modelCamera").AddComponent<Camera>();
+            ModelCamera.transform.position = new Vector3(0, 0, -3);
            
             ModelCamera.cullingMask = 1 << LayerMask.NameToLayer("Body");
             ModelCamera.clearFlags = CameraClearFlags.Depth;

@@ -21,9 +21,12 @@ public class ButtonBehaviorCustomData // 定义可序列化数据结构 - 通讯
 }
 
 /// <summary>
-/// 骨骼数据配置类 - 用于序列化和反序列化
+/// 骨骼配置数据结构体（值类型） - 用于序列化和反序列化。
+/// 从 class 改为 struct 以消除每个配置项的堆分配，
+/// 配合预分配数组实现零GC的序列化缓冲区使用。
+/// Newtonsoft.Json 原生支持 struct 的序列化/反序列化。
 /// </summary>
-public class BoneData
+public struct BoneData
 {
     public int id;              // 骨骼ID
     public int type;            // 骨骼类型 (EnumBone: Bone=1, Muscle=2, Fascia=4)
@@ -303,6 +306,7 @@ public class ButtonBehavior : MonoBehaviour
             if (boneDataList != null && boneDataList.Count > 0)
             {
                 GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
+                BoneMod.Instance.boneLoaded = true;
             }
             else
             {

@@ -114,31 +114,18 @@ public class ModView : UIBase
 
     private void OnSubButtonClick()
     {
-        int curid = BoneMod.Instance.CurrentBoneId;
-        if (curid <= 0) //当前没有选中任何骨骼id
+        int currentType = GameObjectManager.Instance.ShowType;
+        int newType = UtilHelper.RemoveNextLayer(currentType);
+        
+        if (newType == currentType)
         {
-            if (GameObjectManager.Instance.ShowType==(int)BoneShowType.None)
-            {
-                TipsMod.Instance.ShowTips("已隐藏全部层级");
-            }
-            else
-            {
-                GameObjectManager.Instance.ShowType = UtilHelper.ClearHighestBit((int)GameObjectManager.Instance.ShowType);
-            }
-           
+            // No removable layer found (only Bone or None remains)
+            TipsMod.Instance.ShowTips("已隐藏全部层级");
         }
         else
         {
-            if (GameObjectManager.Instance.ShowType==(int)BoneShowType.None)
-            {
-                TipsMod.Instance.ShowTips("已隐藏全部层级");
-            }
-            else
-            {
-                GameObjectManager.Instance.ShowType = UtilHelper.ClearHighestBit((int)GameObjectManager.Instance.ShowType);
-            }
+            GameObjectManager.Instance.ShowType = newType;
         }
-        
     }
 
     private void OnAddLightButtonClick()
@@ -158,45 +145,19 @@ public class ModView : UIBase
 
     private void OnAddButtonClick()
     {
-        int curid = BoneMod.Instance.CurrentBoneId;
-        if (curid <= 0) //当前没有选中任何骨骼id
+        int currentType = GameObjectManager.Instance.ShowType;
+
+        if (currentType > (int)BoneShowType.All)
         {
-            if (GameObjectManager.Instance.ShowType > (int)BoneShowType.All)
-            {
-                GameObjectManager.Instance.ShowType = (int)BoneShowType.All;
-            }
-            else
-            {
-                if (UtilHelper.IsContains(GameObjectManager.Instance.ShowType,(int)BoneShowType.All)) 
-                {
-                    //GameObjectManager.Instance.ShowType = (int)BoneShowType.All;
-                    TipsMod.Instance.ShowTips("已显示全部层级");
-                }
-                else
-                {
-                    GameObjectManager.Instance.ShowType =  UtilHelper.AddOneBeforeHighestBit((int)GameObjectManager.Instance.ShowType);
-                }
-            }
-           
+            GameObjectManager.Instance.ShowType = (int)BoneShowType.All;
+        }
+        else if (UtilHelper.IsContains(currentType, (int)BoneShowType.All))
+        {
+            TipsMod.Instance.ShowTips("已显示全部层级");
         }
         else
         {
-            if (GameObjectManager.Instance.ShowType > (int)BoneShowType.All)
-            {
-                GameObjectManager.Instance.ShowType = (int)BoneShowType.All;
-            }
-            else
-            {
-                if (UtilHelper.IsContains(GameObjectManager.Instance.ShowType,(int)BoneShowType.All)) 
-                {
-                    //GameObjectManager.Instance.ShowType = (int)BoneShowType.All;
-                    TipsMod.Instance.ShowTips("已显示全部层级");
-                }
-                else
-                {
-                    GameObjectManager.Instance.ShowType =  UtilHelper.AddOneBeforeHighestBit((int)GameObjectManager.Instance.ShowType);
-                }
-            }
+            GameObjectManager.Instance.ShowType = UtilHelper.AddNextLayer(currentType);
         }
     }
 
