@@ -100,7 +100,8 @@ public class Main : MonoBehaviour
     public void Start()
     {
         GameObjectManager.Instance.SelectBoneType = (int)EnumPos.All;
-        GameObjectManager.Instance.BodyVisible = true;
+        // 模型显示由 App 端发送 ReceiveBoneConfig 或 ShowModel 消息后触发
+        // 不在此处提前显示，避免出包后模型在数据未就绪时显示
        
 
     }

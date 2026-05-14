@@ -307,6 +307,8 @@ public class ButtonBehavior : MonoBehaviour
             {
                 GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
                 BoneMod.Instance.boneLoaded = true;
+                // 接收到骨骼配置后显示模型
+                GameObjectManager.Instance.BodyVisible = true;
             }
             else
             {
