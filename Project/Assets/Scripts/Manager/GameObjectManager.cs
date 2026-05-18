@@ -24,11 +24,13 @@ public class GameObjectManager : SingletonManager<GameObjectManager>, IGeneric
         {
             if (_bodyModelService.Body == null)
             {
+                Debug.LogWarning($"[GameObjectManager] BodyVisible 设置失败: Body 为 null, 请求值: {value}");
                 _bodyVisible = false;
                 return;
             }
             _bodyVisible = value;
             _bodyModelService.SetBodyVisible(value);
+            Debug.Log($"[GameObjectManager] BodyVisible = {value}, Body active: {_bodyModelService.Body.activeSelf}");
         }
     }
 

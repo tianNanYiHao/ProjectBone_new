@@ -27,12 +27,15 @@ public class BodyModelService
     /// </summary>
     public void LoadBody()
     {
+        Debug.Log("[BodyModel] 开始加载模型...");
         GameObject obj = LoadModelPrefab();
         if (obj == null)
         {
-            Debug.LogError("BodyModelService: 模型预制体加载失败");
+            Debug.LogError("[BodyModel] 模型预制体加载失败! Resources.Load(\"Model/jirou_nan\") 返回 null");
             return;
         }
+
+        Debug.Log($"[BodyModel] 模型加载成功, childCount: {obj.transform.childCount}");
 
         obj.transform.position = new Vector3(0, 0, 0);
 
@@ -47,6 +50,8 @@ public class BodyModelService
         _initPos = _body.transform.position;
         _initScale = _body.transform.localScale;
         _initAngle = _body.transform.eulerAngles;
+        
+        Debug.Log($"[BodyModel] 模型初始化完成, 注册骨骼数: {_registry.Count}, Body active: {_body.activeSelf}");
     }
 
     /// <summary>

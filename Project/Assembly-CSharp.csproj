@@ -76,6 +76,7 @@
     <Compile Include="Assets\Scripts\Manager\WebRequestManager.cs" />
     <Compile Include="Assets\Scripts\Mod\UserMod.cs" />
     <Compile Include="Assets\Scripts\Base\MonoSingleton.cs" />
+    <Compile Include="Assets\Scripts\Debug\FileLogger.cs" />
     <Compile Include="Assets\Scripts\Define\UIDefine.cs" />
     <Compile Include="Assets\Scripts\Base\IGeneric.cs" />
     <Compile Include="Assets\Scripts\Manager\ResManager.cs" />
@@ -111,6 +112,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\Resources\BillingMode.json" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
+    <None Include="Assets\Resources\bonedata.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />

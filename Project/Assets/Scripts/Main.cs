@@ -14,6 +14,12 @@ public class Main : MonoBehaviour
     {
         DontDestroyOnLoad(this);
         SetScreen();
+        
+        // 添加文件日志记录器（日志写入 persistentDataPath/unity_log.txt）
+        if (GetComponent<FileLogger>() == null)
+        {
+            gameObject.AddComponent<FileLogger>();
+        }
         // StandaloneWebView.SetCommandLineArguments("--disable-web-security");
         var managerTypes = Assembly.GetExecutingAssembly().GetTypes()
             .Where(t => typeof(IGeneric).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
@@ -100,10 +106,7 @@ public class Main : MonoBehaviour
     public void Start()
     {
         GameObjectManager.Instance.SelectBoneType = (int)EnumPos.All;
-        // 模型显示由 App 端发送 ReceiveBoneConfig 或 ShowModel 消息后触发
-        // 不在此处提前显示，避免出包后模型在数据未就绪时显示
-       
-
+        // 模型显示由 App 端发送 ReceiveBoneConfig (code=3) 后自动触发
     }
 
     private void OnEvent2(object[] args)

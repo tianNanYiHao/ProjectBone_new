@@ -125,7 +125,7 @@ public class ButtonBehavior : MonoBehaviour
     /// </summary>
     public void ReceiveMessage(string jsonString)
     {
-        Debug.Log("---- 接收消息 ----" + jsonString);
+        Debug.Log($"[ReceiveMessage] 收到消息, 长度: {(jsonString != null ? jsonString.Length : 0)}, 前100字符: {(jsonString != null && jsonString.Length > 100 ? jsonString.Substring(0, 100) : jsonString)}");
         
         try
         {
@@ -298,26 +298,28 @@ public class ButtonBehavior : MonoBehaviour
     /// </summary>
     private void ReceiveBoneConfigInternal(string msg)
     {
-        Debug.Log("---- 处理骨骼配置数据 ----" + msg);
+        Debug.Log($"[BoneConfig] 开始处理骨骼配置数据, 数据长度: {(msg != null ? msg.Length : 0)}");
         try
         {
             // 第二层反序列化：从 msg 中解析具体的骨骼数据
             List<BoneData> boneDataList = DeserializeBoneDataList(msg);
             if (boneDataList != null && boneDataList.Count > 0)
             {
+                Debug.Log($"[BoneConfig] 解析成功, 骨骼数量: {boneDataList.Count}");
                 GameObjectManager.Instance.ApplyBoneConfig(boneDataList);
                 BoneMod.Instance.boneLoaded = true;
                 // 接收到骨骼配置后显示模型
                 GameObjectManager.Instance.BodyVisible = true;
+                Debug.Log($"[BoneConfig] 配置应用完成, 模型已显示, Body={GameObjectManager.Instance.Body != null}");
             }
             else
             {
-                Debug.LogWarning("骨骼配置数据为空");
+                Debug.LogWarning("[BoneConfig] 骨骼配置数据为空或解析为null");
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"处理骨骼配置数据异常: {e.Message}");
+            Debug.LogError($"[BoneConfig] 处理骨骼配置数据异常: {e.Message}\n{e.StackTrace}");
         }
     }
 
