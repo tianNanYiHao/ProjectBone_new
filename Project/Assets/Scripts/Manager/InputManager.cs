@@ -133,36 +133,7 @@ public class InputManager : SingletonManager<InputManager>, IGeneric
             float deltaX = oneFingerPanGesture.DeltaX;
             float deltaY = oneFingerPanGesture.DeltaY;
 
-            // 如果还没锁定方向，累计移动量来判断
-            if (!axisLocked)
-            {
-                accumulatedDelta.x += Mathf.Abs(deltaX);
-                accumulatedDelta.y += Mathf.Abs(deltaY);
-
-                float total = accumulatedDelta.x + accumulatedDelta.y;
-                if (total >= axisLockThreshold)
-                {
-                    axisLocked = true;
-                    lockedToHorizontal = accumulatedDelta.x >= accumulatedDelta.y;
-                }
-                else
-                {
-                    // 还没达到锁定阈值，先不旋转
-                    return;
-                }
-            }
-
-            // 只保留锁定方向的分量
-            if (lockedToHorizontal)
-            {
-                deltaY = 0f;
-            }
-            else
-            {
-                deltaX = 0f;
-            }
-
-            // 平滑处理
+            // 平滑处理（不锁定轴，X和Y同时生效，支持斜向旋转）
             smoothedDelta.x = Mathf.Lerp(lastDelta.x, deltaX, 1f - velocitySmoothing);
             smoothedDelta.y = Mathf.Lerp(lastDelta.y, deltaY, 1f - velocitySmoothing);
             lastDelta = smoothedDelta;

@@ -106,8 +106,29 @@ public class Main : MonoBehaviour
     public void Start()
     {
         GameObjectManager.Instance.SelectBoneType = (int)EnumPos.All;
-        // 模型显示由 App 端发送 ReceiveBoneConfig (code=3) 后自动触发
+#if UNITY_EDITOR
+        // 编辑器下加载本地 bonedata.txt 模拟服务器数据，用于测试
+        LoadLocalBoneData();
+#endif
     }
+
+#if UNITY_EDITOR
+    private void LoadLocalBoneData()
+    {
+        TextAsset textAsset = Resources.Load<TextAsset>("bonedata");
+        if (textAsset == null)
+        {
+            Debug.LogWarning("[Main] bonedata.txt 未找到");
+            return;
+        }
+
+        ButtonBehavior buttonBehavior = FindObjectOfType<ButtonBehavior>();
+        if (buttonBehavior != null)
+        {
+            buttonBehavior.ReceiveMessage(textAsset.text);
+        }
+    }
+#endif
 
     private void OnEvent2(object[] args)
     {
